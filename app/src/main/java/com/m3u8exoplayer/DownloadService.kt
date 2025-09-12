@@ -30,6 +30,7 @@ class DownloadService : Service() {
         const val EXTRA_PROGRESS = "progress"
         const val EXTRA_STATUS = "status"
         const val EXTRA_STAGE = "stage"
+        const val EXTRA_FILE_PATH = "file_path"
         const val STAGE_DOWNLOAD = "download"
         const val STAGE_CONVERT = "convert"
         const val STAGE_COMPLETE = "complete"
@@ -157,14 +158,16 @@ class DownloadService : Service() {
         val convertJob = CoroutineScope(Dispatchers.IO).launch {
             while (convertProgress < 100) {
                 convertProgress += 2
-                updateNotification(title, "转换中... $convertProgress%", convertProgress)
-                sendProgressBroadcast(STAGE_CONVERT, convertProgress, "转换中... $convertProgress%")
+                updateNotification(title, "转换MP4... $convertProgress%", convertProgress)
+                sendProgressBroadcast(STAGE_CONVERT, convertProgress, "转换MP4... $convertProgress%")
                 kotlinx.coroutines.delay(300) // 转换比下载稍快一些
             }
             
             // 转换完成
             updateNotification(title, "下载完成", 100)
-            sendProgressBroadcast(STAGE_COMPLETE, 100, "下载完成")
+            // 查找实际下载的文件路径
+            val actualFilePath = findActualDownloadedFile()
+            sendProgressBroadcast(STAGE_COMPLETE, 100, "下载完成", actualFilePath)
             
             // 3秒后停止服务
             CoroutineScope(Dispatchers.Main).launch {
@@ -217,16 +220,55 @@ class DownloadService : Service() {
         android.util.Log.d("DownloadService", "通知已发送到通知管理器")
     }
     
-    private fun sendProgressBroadcast(stage: String, progress: Int, status: String) {
+    private fun sendProgressBroadcast(stage: String, progress: Int, status: String, filePath: String? = null) {
         val intent = Intent(ACTION_PROGRESS_UPDATE).apply {
             putExtra(EXTRA_STAGE, stage)
             putExtra(EXTRA_PROGRESS, progress)
             putExtra(EXTRA_STATUS, status)
+            filePath?.let { putExtra(EXTRA_FILE_PATH, it) }
             // 设置包名确保广播发送到正确的应用
             setPackage(packageName)
         }
         sendBroadcast(intent)
-        android.util.Log.d("DownloadService", "发送进度广播: $stage - $progress% - $status")
+        android.util.Log.d("DownloadService", "发送进度广播: $stage - $progress% - $status${filePath?.let { " - 文件: $it" } ?: ""}")
+    }
+    
+    /**
+     * 查找实际下载的文件
+     */
+    private fun findActualDownloadedFile(): String? {
+        try {
+            // 查找 M3U8 下载目录
+            val m3u8Dir = java.io.File("/sdcard/Download/M3U8")
+            if (m3u8Dir.exists()) {
+                val files = m3u8Dir.listFiles { file ->
+                    file.isFile && (file.name.endsWith(".mp4") || file.name.endsWith(".ts"))
+                }
+                if (files != null && files.isNotEmpty()) {
+                    // 返回最新文件的路径
+                    val latestFile = files.maxByOrNull { it.lastModified() }
+                    android.util.Log.d("DownloadService", "找到最新文件: ${latestFile?.absolutePath}")
+                    return latestFile?.absolutePath
+                }
+            }
+            
+            // 查找 Downloads 目录
+            val downloadsDir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
+            if (downloadsDir.exists()) {
+                val files = downloadsDir.listFiles { file ->
+                    file.isFile && (file.name.endsWith(".mp4") || file.name.endsWith(".ts"))
+                }
+                if (files != null && files.isNotEmpty()) {
+                    // 返回最新文件的路径
+                    val latestFile = files.maxByOrNull { it.lastModified() }
+                    android.util.Log.d("DownloadService", "找到最新文件: ${latestFile?.absolutePath}")
+                    return latestFile?.absolutePath
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("DownloadService", "查找下载文件失败: ${e.message}")
+        }
+        return null
     }
     
     override fun onDestroy() {

@@ -17,21 +17,23 @@ import android.provider.Settings
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import java.io.File
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
-import com.google.android.exoplayer2.Player
+// import com.google.android.exoplayer2.Player
+// import com.google.android.exoplayer2.ui.PlayerView
 import com.m3u8exoplayer.databinding.ActivityMainBinding
+// import com.dueeeke.videoplayer.player.VideoView
+// import com.dueeeke.videoplayer.controller.StandardVideoController
 
 class MainActivity : AppCompatActivity() {
     
     private lateinit var binding: ActivityMainBinding
     private lateinit var viewModel: MainViewModel
     
-    // 自定义播放器控制器
-    private lateinit var customPlayerControlView: CustomPlayerControlView
-    private var progressUpdateHandler: Handler? = null
-    private var progressUpdateRunnable: Runnable? = null
+    // 下载文件路径
+    private var downloadedFilePath: String? = null
     
     // 广播接收器
     private val progressReceiver = object : BroadcastReceiver() {
@@ -41,6 +43,12 @@ class MainActivity : AppCompatActivity() {
                     val stage = intent.getStringExtra(DownloadService.EXTRA_STAGE) ?: ""
                     val progress = intent.getIntExtra(DownloadService.EXTRA_PROGRESS, 0)
                     val status = intent.getStringExtra(DownloadService.EXTRA_STATUS) ?: ""
+                    val filePath = intent.getStringExtra(DownloadService.EXTRA_FILE_PATH)
+                    
+                    // 保存文件路径
+                    if (filePath != null) {
+                        downloadedFilePath = filePath
+                    }
                     
                     // 在主线程更新UI
                     runOnUiThread {
@@ -62,6 +70,9 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // 设置状态栏为白色背景
+        setupStatusBar()
+        
         viewModel = ViewModelProvider(this)[MainViewModel::class.java]
         
         setupUI()
@@ -77,24 +88,19 @@ class MainActivity : AppCompatActivity() {
         }
     }
     
-    private fun setupUI() {
-        // 绑定ExoPlayer到PlayerView
-        binding.playerView.player = viewModel.getPlayer()
-
-        // 禁用默认控制器
-        binding.playerView.setUseController(false)
-        binding.playerView.setControllerAutoShow(false)
-        binding.playerView.setControllerHideOnTouch(false)
-        binding.playerView.setUseArtwork(false)
-
-        // 初始化自定义控制器
-        setupCustomPlayerController()
-
-        // 添加点击播放器显示控制条的功能
-        binding.playerView.setOnClickListener {
-            toggleCustomController()
+    private fun setupStatusBar() {
+        // 设置状态栏为白色背景
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            window.statusBarColor = ContextCompat.getColor(this, R.color.status_bar_color)
         }
         
+        // 设置状态栏文字为深色（适配白色背景）
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            window.decorView.systemUiVisibility = window.decorView.systemUiVisibility or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+        }
+    }
+    
+    private fun setupUI() {
         // 设置内置测试链接
         val defaultUrl = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
         binding.etM3u8Url.setText(defaultUrl)
@@ -123,6 +129,13 @@ class MainActivity : AppCompatActivity() {
                     // 设置下载状态（进度将通过广播接收器更新）
                     binding.btnDownload.isEnabled = false
                     binding.btnDownload.text = "下载中 0%"
+                    // 设置下载中的紫色背景
+                    binding.btnDownload.setBackgroundColor(ContextCompat.getColor(this, R.color.download_progress_bg))
+                    binding.btnDownload.setTextColor(ContextCompat.getColor(this, R.color.download_progress_text))
+                    
+                // 显示下载动画
+                binding.lottieDownload.visibility = View.VISIBLE
+                binding.lottieDownload.playAnimation()
                     
                     Toast.makeText(this, "已开始后台下载", Toast.LENGTH_SHORT).show()
                 } else {
@@ -132,85 +145,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
     
-    private fun setupCustomPlayerController() {
-        // 创建自定义控制器
-        customPlayerControlView = CustomPlayerControlView(this)
-        
-        // 设置全屏切换监听器
-        customPlayerControlView.setOnFullscreenToggleListener { isFullscreen ->
-            // 处理全屏切换逻辑
-            handleFullscreenToggle(isFullscreen)
-        }
-        
-        // 将控制器添加到播放器下方
-        val parentLayout = binding.playerView.parent as android.view.ViewGroup
-        val playerIndex = parentLayout.indexOfChild(binding.playerView)
-        parentLayout.addView(customPlayerControlView, playerIndex + 1)
-        
-        // 初始时隐藏控制器
-        customPlayerControlView.visibility = View.GONE
-        
-        // 设置播放器监听器
-        viewModel.getPlayer().addListener(object : Player.Listener {
-            override fun onPlaybackStateChanged(playbackState: Int) {
-                updateCustomController()
-            }
-            
-            override fun onIsPlayingChanged(isPlaying: Boolean) {
-                updateCustomController()
-            }
-        })
-        
-        // 启动进度更新
-        startProgressUpdate()
-    }
     
-    private fun toggleCustomController() {
-        if (customPlayerControlView.visibility == View.VISIBLE) {
-            customPlayerControlView.visibility = View.GONE
-        } else {
-            customPlayerControlView.visibility = View.VISIBLE
-        }
-    }
-    
-    private fun updateCustomController() {
-        customPlayerControlView.updateProgress()
-    }
-    
-    private fun handleFullscreenToggle(isFullscreen: Boolean) {
-        if (isFullscreen) {
-            // 进入全屏模式
-            window.decorView.systemUiVisibility = (
-                View.SYSTEM_UI_FLAG_FULLSCREEN or
-                View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
-                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-            )
-            supportActionBar?.hide()
-        } else {
-            // 退出全屏模式
-            window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
-            supportActionBar?.show()
-        }
-    }
-    
-    private fun startProgressUpdate() {
-        progressUpdateHandler = Handler(Looper.getMainLooper())
-        progressUpdateRunnable = object : Runnable {
-            override fun run() {
-                if (customPlayerControlView.visibility == View.VISIBLE) {
-                    customPlayerControlView.updateProgress()
-                }
-                progressUpdateHandler?.postDelayed(this, 1000) // 每秒更新一次
-            }
-        }
-        progressUpdateHandler?.post(progressUpdateRunnable!!)
-    }
-    
-    private fun stopProgressUpdate() {
-        progressUpdateRunnable?.let { progressUpdateHandler?.removeCallbacks(it) }
-        progressUpdateHandler = null
-        progressUpdateRunnable = null
-    }
     
     private fun setupObservers() {
         // 简化观察者，因为现在使用后台下载服务
@@ -371,11 +306,12 @@ class MainActivity : AppCompatActivity() {
     
     
     
+    override fun onBackPressed() {
+        super.onBackPressed()
+    }
+    
     override fun onDestroy() {
         super.onDestroy()
-        
-        // 停止进度更新
-        stopProgressUpdate()
         
         // 注销广播接收器
         try {
@@ -389,46 +325,201 @@ class MainActivity : AppCompatActivity() {
         when (stage) {
             DownloadService.STAGE_DOWNLOAD -> {
                 binding.btnDownload.text = "下载中 $progress%"
+                // 设置下载中的紫色背景
+                binding.btnDownload.setBackgroundColor(ContextCompat.getColor(this, R.color.download_progress_bg))
+                binding.btnDownload.setTextColor(ContextCompat.getColor(this, R.color.download_progress_text))
+                binding.btnDownload.isEnabled = false
             }
             DownloadService.STAGE_CONVERT -> {
-                binding.btnDownload.text = "转换中 $progress%"
+                binding.btnDownload.text = "转换MP4 $progress%"
+                // 保持紫色背景
+                binding.btnDownload.setBackgroundColor(ContextCompat.getColor(this, R.color.download_progress_bg))
+                binding.btnDownload.setTextColor(ContextCompat.getColor(this, R.color.download_progress_text))
+                binding.btnDownload.isEnabled = false
             }
             DownloadService.STAGE_COMPLETE -> {
                 binding.btnDownload.text = "下载完成"
                 binding.btnDownload.isEnabled = true
                 
+                // 保持紫色背景和白色文字
+                binding.btnDownload.setBackgroundColor(ContextCompat.getColor(this, R.color.download_progress_bg))
+                binding.btnDownload.setTextColor(ContextCompat.getColor(this, R.color.download_progress_text))
+                
+                // 隐藏下载动画
+                binding.lottieDownload.visibility = View.GONE
+                binding.lottieDownload.pauseAnimation()
+                
+                // 下载完成，准备调用系统播放器
+                
                 // 显示Toast提示
                 Toast.makeText(this@MainActivity, "下载完成", Toast.LENGTH_SHORT).show()
                 
-                // 自动开始播放
-                autoStartPlayback()
+                // 使用系统播放器播放下载的文件
+                trySystemPlayerFirst()
                 
                 // 2秒后恢复按钮状态
                 android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
                     binding.btnDownload.text = getString(R.string.download)
+                    // 恢复默认按钮样式
+                    binding.btnDownload.background = ContextCompat.getDrawable(this, android.R.drawable.btn_default)
+                    binding.btnDownload.setTextColor(ContextCompat.getColor(this, R.color.white))
                 }, 2000)
             }
         }
     }
     
-    private fun autoStartPlayback() {
+    
+    /**
+     * 使用系统播放器播放下载的文件
+     */
+    private fun trySystemPlayerFirst() {
+        val downloadedFilePath = getDownloadedFilePath()
+        if (downloadedFilePath != null) {
+            // 尝试使用系统播放器
+            if (canUseSystemPlayer(downloadedFilePath)) {
+                openWithSystemPlayer(downloadedFilePath)
+            } else {
+                // 系统播放器不可用
+                Toast.makeText(this, "系统播放器不可用，请手动打开下载的文件", Toast.LENGTH_LONG).show()
+            }
+        } else {
+            // 没有文件路径
+            Toast.makeText(this, "未找到下载的文件", Toast.LENGTH_SHORT).show()
+        }
+    }
+    
+    /**
+     * 检查是否可以使用系统播放器
+     */
+    private fun canUseSystemPlayer(filePath: String): Boolean {
+        return try {
+            val file = File(filePath)
+            if (!file.exists()) {
+                return false
+            }
+            
+            val uri = Uri.fromFile(file)
+            val intent = Intent(Intent.ACTION_VIEW)
+            intent.setDataAndType(uri, "video/*")
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            
+            // 检查是否有应用可以处理这个Intent
+            intent.resolveActivity(packageManager) != null
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "检查系统播放器可用性失败: ${e.message}")
+            false
+        }
+    }
+    
+    /**
+     * 获取下载文件的路径
+     */
+    private fun getDownloadedFilePath(): String? {
+        return downloadedFilePath
+    }
+    
+    /**
+     * 调用系统视频播放器播放下载的文件
+     */
+    private fun openWithSystemPlayer(filePath: String) {
         try {
-            val url = binding.etM3u8Url.text.toString().trim()
-            if (url.isNotEmpty()) {
-                // 使用内置ExoPlayer自动播放
-                viewModel.playM3U8()
-
-                // 设置自定义播放器
-                customPlayerControlView.setPlayer(viewModel.getPlayer())
+            android.util.Log.d("MainActivity", "尝试打开文件: $filePath")
+            
+            val file = File(filePath)
+            if (!file.exists()) {
+                android.util.Log.w("MainActivity", "文件不存在: $filePath，尝试查找实际下载的文件")
                 
-                // 延迟1秒后隐藏自定义控制器
-                Handler(Looper.getMainLooper()).postDelayed({
-                    customPlayerControlView.visibility = View.GONE
-                }, 1000)
+                // 尝试查找实际下载的文件
+                val actualFile = findActualDownloadedFile()
+                if (actualFile != null) {
+                    android.util.Log.d("MainActivity", "找到实际文件: ${actualFile.absolutePath}")
+                    openFileWithSystemPlayer(actualFile)
+                } else {
+                    android.util.Log.w("MainActivity", "未找到实际下载的文件")
+                    Toast.makeText(this, "未找到下载的文件", Toast.LENGTH_SHORT).show()
+                }
+                return
+            }
+            
+            openFileWithSystemPlayer(file)
+            
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "调用系统播放器失败: ${e.message}")
+            Toast.makeText(this, "系统播放器启动失败: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+    
+    /**
+     * 使用系统播放器打开文件
+     */
+    private fun openFileWithSystemPlayer(file: File) {
+        try {
+            val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                // Android 7.0+ 使用 FileProvider
+                androidx.core.content.FileProvider.getUriForFile(
+                    this,
+                    "${packageName}.fileprovider",
+                    file
+                )
+            } else {
+                // Android 7.0 以下使用 file://
+                Uri.fromFile(file)
+            }
+            
+            val intent = Intent(Intent.ACTION_VIEW)
+            intent.setDataAndType(uri, "video/*")
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            
+            android.util.Log.d("MainActivity", "创建Intent: $intent")
+            android.util.Log.d("MainActivity", "URI: $uri")
+            
+            // 检查是否有应用可以处理这个Intent
+            if (intent.resolveActivity(packageManager) != null) {
+                startActivity(intent)
+                Toast.makeText(this, "正在使用系统播放器打开视频", Toast.LENGTH_SHORT).show()
+            } else {
+                android.util.Log.w("MainActivity", "没有找到可用的视频播放器")
+                Toast.makeText(this, "没有找到可用的视频播放器", Toast.LENGTH_LONG).show()
             }
         } catch (e: Exception) {
-            android.util.Log.e("MainActivity", "自动播放失败: ${e.message}")
+            android.util.Log.e("MainActivity", "打开文件失败: ${e.message}")
+            throw e
         }
+    }
+    
+    /**
+     * 查找实际下载的文件
+     */
+    private fun findActualDownloadedFile(): File? {
+        try {
+            // 查找 M3U8 下载目录
+            val m3u8Dir = File("/sdcard/Download/M3U8")
+            if (m3u8Dir.exists()) {
+                val files = m3u8Dir.listFiles { file ->
+                    file.isFile && (file.name.endsWith(".mp4") || file.name.endsWith(".ts"))
+                }
+                if (files != null && files.isNotEmpty()) {
+                    // 返回最新的文件
+                    return files.maxByOrNull { it.lastModified() }
+                }
+            }
+            
+            // 查找 Downloads 目录
+            val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            if (downloadsDir.exists()) {
+                val files = downloadsDir.listFiles { file ->
+                    file.isFile && (file.name.endsWith(".mp4") || file.name.endsWith(".ts"))
+                }
+                if (files != null && files.isNotEmpty()) {
+                    // 返回最新的文件
+                    return files.maxByOrNull { it.lastModified() }
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "查找下载文件失败: ${e.message}")
+        }
+        return null
     }
     
 }

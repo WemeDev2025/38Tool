@@ -10,6 +10,9 @@ import android.util.Log
 // import com.arthenica.mobileffmpeg.FFmpeg
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.sync.Semaphore
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
@@ -19,13 +22,16 @@ import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 class M3U8Downloader(private val context: Context) {
     
     private val client = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(60, TimeUnit.SECONDS)
-        .writeTimeout(60, TimeUnit.SECONDS)
+        .connectTimeout(10, TimeUnit.SECONDS)  // 减少连接超时时间
+        .readTimeout(30, TimeUnit.SECONDS)     // 减少读取超时时间
+        .writeTimeout(30, TimeUnit.SECONDS)    // 减少写入超时时间
+        .connectionPool(okhttp3.ConnectionPool(10, 5, TimeUnit.MINUTES)) // 连接池优化
+        .retryOnConnectionFailure(true)        // 启用连接失败重试
         .build()
     
     suspend fun downloadM3U8(
@@ -54,32 +60,58 @@ class M3U8Downloader(private val context: Context) {
             }
             
             val outputFile = File(outputDir, "downloaded_video.ts")
-            val outputStream = FileOutputStream(outputFile)
             
-            var downloadedCount = 0
+            // 使用多线程并发下载，限制并发数为6
+            val semaphore = Semaphore(6)
+            val downloadedCount = AtomicInteger(0)
             val totalSegments = playlist.size
             
-            // 下载所有片段
-            for ((index, segmentUrl) in playlist.withIndex()) {
-                try {
-                    Log.d("M3U8Downloader", "下载片段 $index: $segmentUrl")
-                    
-                    val segmentData = downloadSegment(segmentUrl)
-                    outputStream.write(segmentData)
-                    
-                    downloadedCount++
-                    val progress = (downloadedCount * 100) / totalSegments
-                    onProgress(progress)
-                    
-                    Log.d("M3U8Downloader", "片段 $index 下载完成，进度: $progress%")
-                    
-                } catch (e: Exception) {
-                    Log.e("M3U8Downloader", "下载片段 $index 失败", e)
-                    // 继续下载其他片段
+            // 创建临时文件存储每个片段
+            val tempFiles = mutableListOf<File>()
+            
+            // 并发下载所有片段
+            val downloadJobs = playlist.mapIndexed { index, segmentUrl ->
+                async(Dispatchers.IO) {
+                    semaphore.acquire()
+                    try {
+                        Log.d("M3U8Downloader", "开始下载片段 $index: $segmentUrl")
+                        
+                        val segmentData = downloadSegment(segmentUrl)
+                        val tempFile = File(outputDir, "segment_$index.tmp")
+                        tempFile.writeBytes(segmentData)
+                        tempFiles.add(tempFile)
+                        
+                        val currentCount = downloadedCount.incrementAndGet()
+                        val progress = (currentCount * 100) / totalSegments
+                        onProgress(progress)
+                        
+                        Log.d("M3U8Downloader", "片段 $index 下载完成，进度: $progress%")
+                        
+                    } catch (e: Exception) {
+                        Log.e("M3U8Downloader", "下载片段 $index 失败", e)
+                        // 继续下载其他片段
+                    } finally {
+                        semaphore.release()
+                    }
                 }
             }
             
-            outputStream.close()
+            // 等待所有下载完成
+            downloadJobs.awaitAll()
+            
+            // 按顺序合并所有片段
+            Log.d("M3U8Downloader", "开始合并 ${tempFiles.size} 个片段")
+            FileOutputStream(outputFile).use { outputStream ->
+                for (i in 0 until totalSegments) {
+                    val tempFile = File(outputDir, "segment_$i.tmp")
+                    if (tempFile.exists()) {
+                        tempFile.inputStream().use { inputStream ->
+                            inputStream.copyTo(outputStream)
+                        }
+                        tempFile.delete() // 删除临时文件
+                    }
+                }
+            }
             
             Log.d("M3U8Downloader", "TS文件下载完成: ${outputFile.absolutePath}")
             
