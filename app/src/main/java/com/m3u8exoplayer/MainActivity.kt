@@ -140,9 +140,9 @@ class MainActivity : AppCompatActivity() {
                     binding.btnDownload.background = ContextCompat.getDrawable(this, R.drawable.button_download_progress)
                     binding.btnDownload.setTextColor(ContextCompat.getColor(this, R.color.download_progress_text))
                     
-                // 显示下载动画
-                binding.lottieDownload.visibility = View.VISIBLE
-                binding.lottieDownload.playAnimation()
+                // 隐藏下载动画
+                binding.lottieDownload.visibility = View.GONE
+                binding.lottieDownload.pauseAnimation()
                     
                     Toast.makeText(this, "已开始后台下载", Toast.LENGTH_SHORT).show()
                 } else {
