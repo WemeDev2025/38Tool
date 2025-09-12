@@ -40,12 +40,26 @@ class M3U8Downloader(private val context: Context) {
         onComplete: (String) -> Unit,
         onError: (String) -> Unit
     ) = withContext(Dispatchers.IO) {
+        downloadM3U8WithBitrate(url, null, onProgress, onComplete, onError)
+    }
+    
+    suspend fun downloadM3U8WithBitrate(
+        url: String,
+        selectedBitrate: BitrateInfo?,
+        onProgress: (Int) -> Unit,
+        onComplete: (String) -> Unit,
+        onError: (String) -> Unit
+    ) = withContext(Dispatchers.IO) {
         
         try {
             Log.d("M3U8Downloader", "开始下载M3U8: $url")
             
             // 解析M3U8文件
-            val playlist = parseM3U8(url)
+            val playlist = if (selectedBitrate != null) {
+                parseM3U8(selectedBitrate.url)
+            } else {
+                parseM3U8(url)
+            }
             if (playlist.isEmpty()) {
                 onError("M3U8文件为空或格式错误")
                 return@withContext
@@ -170,6 +184,80 @@ class M3U8Downloader(private val context: Context) {
             Log.e("M3U8Downloader", "解析M3U8失败", e)
             emptyList()
         }
+    }
+    
+    suspend fun getAvailableBitrates(url: String): List<BitrateInfo> = withContext(Dispatchers.IO) {
+        try {
+            val request = Request.Builder()
+                .url(url)
+                .addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+                .build()
+            
+            val response = client.newCall(request).execute()
+            if (!response.isSuccessful) {
+                return@withContext emptyList()
+            }
+            
+            val content = response.body?.string() ?: return@withContext emptyList()
+            response.close()
+            
+            val lines = content.lines().map { it.trim() }.filter { it.isNotBlank() }
+            
+            // 检查是否是主播放列表
+            if (content.contains("#EXT-X-STREAM-INF")) {
+                return@withContext parseMasterPlaylistBitrates(lines, url)
+            }
+            
+            emptyList()
+        } catch (e: Exception) {
+            Log.e("M3U8Downloader", "获取码率列表失败", e)
+            emptyList()
+        }
+    }
+    
+    private fun parseMasterPlaylistBitrates(lines: List<String>, baseUrl: String): List<BitrateInfo> {
+        val baseUrlPath = baseUrl.substringBeforeLast("/") + "/"
+        val bitrates = mutableListOf<BitrateInfo>()
+        
+        for (i in lines.indices) {
+            val line = lines[i]
+            if (line.startsWith("#EXT-X-STREAM-INF")) {
+                // 解析码率信息
+                val bandwidth = extractValue(line, "BANDWIDTH=")?.toIntOrNull() ?: 0
+                val resolution = extractValue(line, "RESOLUTION=") ?: "未知"
+                val codecs = extractValue(line, "CODECS=") ?: ""
+                val name = extractValue(line, "NAME=") ?: "${bandwidth/1000}kbps"
+                
+                // 找到对应的URL
+                for (j in i + 1 until lines.size) {
+                    val nextLine = lines[j]
+                    if (!nextLine.startsWith("#")) {
+                        val streamUrl = if (nextLine.startsWith("http")) {
+                            nextLine
+                        } else {
+                            baseUrlPath + nextLine
+                        }
+                        
+                        bitrates.add(BitrateInfo(name, bandwidth, resolution, codecs, streamUrl))
+                        break
+                    }
+                }
+            }
+        }
+        
+        // 按码率排序（从高到低）
+        return bitrates.sortedByDescending { it.bandwidth }
+    }
+    
+    private fun extractValue(line: String, key: String): String? {
+        val startIndex = line.indexOf(key)
+        if (startIndex == -1) return null
+        
+        val valueStart = startIndex + key.length
+        val endIndex = line.indexOf(",", valueStart)
+        val end = if (endIndex == -1) line.length else endIndex
+        
+        return line.substring(valueStart, end).trim('"')
     }
     
     private suspend fun parseMasterPlaylist(lines: List<String>, baseUrl: String): List<String> {

@@ -15,12 +15,18 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 import android.view.View
+import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import java.io.File
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.LinearLayoutManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 // import com.google.android.exoplayer2.Player
 // import com.google.android.exoplayer2.ui.PlayerView
 import com.m3u8exoplayer.databinding.ActivityMainBinding
@@ -34,6 +40,11 @@ class MainActivity : AppCompatActivity() {
     
     // 下载文件路径
     private var downloadedFilePath: String? = null
+    
+    // 码率选择相关
+    private var availableBitrates: List<BitrateInfo> = emptyList()
+    private var selectedBitrate: BitrateInfo? = null
+    private lateinit var bitrateAdapter: BitrateAdapter
     
     // 广播接收器
     private val progressReceiver = object : BroadcastReceiver() {
@@ -107,20 +118,35 @@ class MainActivity : AppCompatActivity() {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: android.text.Editable?) {
-                viewModel.setCurrentUrl(s?.toString()?.trim() ?: "")
+                val url = s?.toString()?.trim() ?: ""
+                viewModel.setCurrentUrl(url)
+                
+                // 检测码率选项
+                if (url.isNotEmpty() && url.contains(".m3u8")) {
+                    showBitrateLoading()
+                    checkBitrates(url)
+                } else {
+                    hideBitrateSelector()
+                }
             }
         })
+        
+        // 初始化码率选择RecyclerView
+        setupBitrateRecyclerView()
         
         
         // 下载按钮启动后台下载
         binding.btnDownload.setOnClickListener {
+            // 收起键盘
+            hideKeyboard()
+            
             if (checkDownloadPermissions() && checkNotificationPermission()) {
                 val url = binding.etM3u8Url.text.toString().trim()
                 if (url.isNotEmpty()) {
                     // 启动后台下载服务
                     val title = "M3U8下载 - ${url.substringAfterLast("/").substringBefore(".")}"
-                    android.util.Log.d("MainActivity", "启动后台下载: $url")
-                    DownloadService.startDownload(this, url, title)
+                    android.util.Log.d("MainActivity", "启动后台下载: $url, 选择码率: ${selectedBitrate?.name}")
+                    DownloadService.startDownloadWithBitrate(this, url, title, selectedBitrate)
                     
                     // 设置下载状态（进度将通过广播接收器更新）
                     binding.btnDownload.isEnabled = false
@@ -496,6 +522,104 @@ class MainActivity : AppCompatActivity() {
             android.util.Log.e("MainActivity", "查找下载文件失败: ${e.message}")
         }
         return null
+    }
+    
+    /**
+     * 检查M3U8链接的可用码率
+     */
+    private fun checkBitrates(url: String) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val m3u8Downloader = M3U8Downloader(this@MainActivity)
+                val bitrates = m3u8Downloader.getAvailableBitrates(url)
+                
+                withContext(Dispatchers.Main) {
+                    if (bitrates.isNotEmpty()) {
+                        availableBitrates = bitrates
+                        showBitrateSelector()
+                        updateBitrateAdapter(bitrates)
+                        selectedBitrate = bitrates.first() // 默认选择最高码率
+                        showBitrateList() // 显示码率列表
+                    } else {
+                        hideBitrateSelector()
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "检查码率失败", e)
+                withContext(Dispatchers.Main) {
+                    hideBitrateSelector()
+                }
+            }
+        }
+    }
+    
+    /**
+     * 显示码率选择器UI
+     */
+    private fun showBitrateSelector() {
+        binding.layoutBitrateSelector.visibility = View.VISIBLE
+    }
+    
+    /**
+     * 显示码率加载状态
+     */
+    private fun showBitrateLoading() {
+        binding.layoutBitrateSelector.visibility = View.VISIBLE
+        binding.layoutBitrateLoading.visibility = View.VISIBLE
+        binding.rvBitrates.visibility = View.GONE
+    }
+    
+    /**
+     * 显示码率列表
+     */
+    private fun showBitrateList() {
+        binding.layoutBitrateLoading.visibility = View.GONE
+        binding.rvBitrates.visibility = View.VISIBLE
+    }
+    
+    /**
+     * 隐藏码率选择器
+     */
+    private fun hideBitrateSelector() {
+        binding.layoutBitrateSelector.visibility = View.GONE
+        binding.layoutBitrateLoading.visibility = View.GONE
+        binding.rvBitrates.visibility = View.GONE
+        availableBitrates = emptyList()
+        selectedBitrate = null
+    }
+    
+    /**
+     * 初始化码率选择RecyclerView
+     */
+    private fun setupBitrateRecyclerView() {
+        bitrateAdapter = BitrateAdapter(emptyList()) { bitrate ->
+            selectedBitrate = bitrate
+            android.util.Log.d("MainActivity", "选择码率: ${bitrate.name}")
+        }
+        
+        binding.rvBitrates.apply {
+            layoutManager = LinearLayoutManager(this@MainActivity, LinearLayoutManager.HORIZONTAL, false)
+            adapter = bitrateAdapter
+        }
+    }
+    
+    /**
+     * 更新码率适配器
+     */
+    private fun updateBitrateAdapter(bitrates: List<BitrateInfo>) {
+        bitrateAdapter = BitrateAdapter(bitrates) { bitrate ->
+            selectedBitrate = bitrate
+            android.util.Log.d("MainActivity", "选择码率: ${bitrate.name}")
+        }
+        binding.rvBitrates.adapter = bitrateAdapter
+    }
+    
+    /**
+     * 隐藏软键盘
+     */
+    private fun hideKeyboard() {
+        val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.hideSoftInputFromWindow(binding.etM3u8Url.windowToken, 0)
     }
     
 }

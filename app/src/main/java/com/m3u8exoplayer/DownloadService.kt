@@ -36,11 +36,19 @@ class DownloadService : Service() {
         const val STAGE_COMPLETE = "complete"
         
         fun startDownload(context: Context, url: String, title: String) {
-            android.util.Log.d("DownloadService", "startDownload called with url: $url")
+            startDownloadWithBitrate(context, url, title, null)
+        }
+        
+        fun startDownloadWithBitrate(context: Context, url: String, title: String, bitrate: BitrateInfo?) {
+            android.util.Log.d("DownloadService", "startDownloadWithBitrate called with url: $url, bitrate: ${bitrate?.name}")
             val intent = Intent(context, DownloadService::class.java).apply {
                 action = ACTION_START_DOWNLOAD
                 putExtra(EXTRA_URL, url)
                 putExtra(EXTRA_TITLE, title)
+                bitrate?.let { 
+                    putExtra("selected_bitrate", it.name)
+                    putExtra("bitrate_url", it.url)
+                }
             }
             android.util.Log.d("DownloadService", "Starting service with intent: $intent")
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -78,8 +86,17 @@ class DownloadService : Service() {
             ACTION_START_DOWNLOAD -> {
                 val url = intent.getStringExtra(EXTRA_URL) ?: return START_NOT_STICKY
                 val title = intent.getStringExtra(EXTRA_TITLE) ?: "M3U8下载"
-                android.util.Log.d("DownloadService", "开始下载: $url")
-                startDownload(url, title)
+                val bitrateName = intent.getStringExtra("selected_bitrate")
+                val bitrateUrl = intent.getStringExtra("bitrate_url")
+                
+                android.util.Log.d("DownloadService", "开始下载: $url, 码率: $bitrateName")
+                
+                if (bitrateUrl != null && bitrateName != null) {
+                    val bitrate = BitrateInfo(bitrateName, 0, "", "", bitrateUrl)
+                    startDownloadWithBitrate(url, title, bitrate)
+                } else {
+                    startDownload(url, title)
+                }
             }
             ACTION_STOP_DOWNLOAD -> {
                 android.util.Log.d("DownloadService", "停止下载")
@@ -113,6 +130,10 @@ class DownloadService : Service() {
     }
     
     private fun startDownload(url: String, title: String) {
+        startDownloadWithBitrate(url, title, null)
+    }
+    
+    private fun startDownloadWithBitrate(url: String, title: String, bitrate: BitrateInfo?) {
         if (isDownloading) {
             android.util.Log.d("DownloadService", "已在下载中，忽略重复请求")
             return
@@ -128,9 +149,10 @@ class DownloadService : Service() {
         
         // 开始下载
         downloadJob = CoroutineScope(Dispatchers.IO).launch {
-            android.util.Log.d("DownloadService", "开始协程下载")
-            m3u8Downloader.downloadM3U8(
+            android.util.Log.d("DownloadService", "开始协程下载，码率: ${bitrate?.name}")
+            m3u8Downloader.downloadM3U8WithBitrate(
                 url = url,
+                selectedBitrate = bitrate,
                 onProgress = { progress ->
                     // 下载阶段：0-100%
                     updateNotification(title, "下载中... $progress%", progress)
