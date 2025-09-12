@@ -1,0 +1,26 @@
+<resources>
+    <string name="app_name">38Tool</string>
+    <string name="m3u8_url_hint">输入M3U8 URL</string>
+    <string name="download">下载</string>
+    <string name="play">播放</string>
+    <string name="pause">暂停</string>
+    <string name="stop">停止</string>
+    <string name="progress">进度: %1$d%%</string>
+    <string name="download_complete">下载完成</string>
+    <string name="download_failed">下载失败</string>
+    <string name="invalid_url">无效的URL</string>
+    <string name="usage_description">
+M3U8格式优势：
+• 支持自适应码率，根据网络状况自动调整画质
+• 分段传输，降低服务器负载，提高播放流畅度
+• 兼容性好，广泛支持各种播放器和设备
+
+功能说明：
+• 自动下载M3U8内容并转换为MP4格式
+• 保存到本地相册，方便离线观看
+• 支持后台下载，不影响其他应用使用
+
+需求反馈：
+jing1834@gmail.com
+    </string>
+</resources>
