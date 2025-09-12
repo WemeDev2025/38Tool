@@ -92,19 +92,8 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun setupStatusBar() {
-        // 设置状态栏为白色背景
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            window.statusBarColor = ContextCompat.getColor(this, R.color.status_bar_color)
-        }
-        
-        // 设置状态栏文字为深色（适配白色背景）
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            window.decorView.systemUiVisibility = window.decorView.systemUiVisibility or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
-        }
-        
-        // 设置按钮初始样式为紫色圆角
-        binding.btnDownload.background = ContextCompat.getDrawable(this, R.drawable.button_download_progress)
-        binding.btnDownload.setTextColor(ContextCompat.getColor(this, R.color.white))
+        // 状态栏样式由主题统一管理，按钮样式由布局文件统一管理
+        // 这里不需要额外设置
     }
     
     private fun setupUI() {
@@ -136,9 +125,6 @@ class MainActivity : AppCompatActivity() {
                     // 设置下载状态（进度将通过广播接收器更新）
                     binding.btnDownload.isEnabled = false
                     binding.btnDownload.text = "下载中 0%"
-                    // 设置下载中的紫色背景，保持圆角
-                    binding.btnDownload.background = ContextCompat.getDrawable(this, R.drawable.button_download_progress)
-                    binding.btnDownload.setTextColor(ContextCompat.getColor(this, R.color.download_progress_text))
                     
                 // 隐藏下载动画
                 binding.lottieDownload.visibility = View.GONE
@@ -248,8 +234,6 @@ class MainActivity : AppCompatActivity() {
                 permissions.toTypedArray(),
                 PERMISSION_REQUEST_CODE
             )
-        } else {
-            Toast.makeText(this, "所有权限已授予，可以开始使用", Toast.LENGTH_SHORT).show()
         }
     }
     
@@ -304,7 +288,7 @@ class MainActivity : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == PERMISSION_REQUEST_CODE) {
             if (grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
-                Toast.makeText(this, "所有权限已授予，可以开始使用", Toast.LENGTH_SHORT).show()
+                // 权限已授予，无需显示toast
             } else {
                 Toast.makeText(this, "需要权限才能下载文件", Toast.LENGTH_SHORT).show()
             }
@@ -332,31 +316,19 @@ class MainActivity : AppCompatActivity() {
         when (stage) {
             DownloadService.STAGE_DOWNLOAD -> {
                 binding.btnDownload.text = "下载中 $progress%"
-                // 设置下载中的紫色背景，保持圆角
-                binding.btnDownload.background = ContextCompat.getDrawable(this, R.drawable.button_download_progress)
-                binding.btnDownload.setTextColor(ContextCompat.getColor(this, R.color.download_progress_text))
                 binding.btnDownload.isEnabled = false
             }
             DownloadService.STAGE_CONVERT -> {
                 binding.btnDownload.text = "转换MP4 $progress%"
-                // 保持紫色背景，保持圆角
-                binding.btnDownload.background = ContextCompat.getDrawable(this, R.drawable.button_download_progress)
-                binding.btnDownload.setTextColor(ContextCompat.getColor(this, R.color.download_progress_text))
                 binding.btnDownload.isEnabled = false
             }
             DownloadService.STAGE_COMPLETE -> {
                 binding.btnDownload.text = "下载完成"
                 binding.btnDownload.isEnabled = true
                 
-                // 保持紫色背景和白色文字，保持圆角
-                binding.btnDownload.background = ContextCompat.getDrawable(this, R.drawable.button_download_progress)
-                binding.btnDownload.setTextColor(ContextCompat.getColor(this, R.color.download_progress_text))
-                
                 // 隐藏下载动画
                 binding.lottieDownload.visibility = View.GONE
                 binding.lottieDownload.pauseAnimation()
-                
-                // 下载完成，准备调用系统播放器
                 
                 // 显示Toast提示
                 Toast.makeText(this@MainActivity, "下载完成", Toast.LENGTH_SHORT).show()
@@ -367,9 +339,6 @@ class MainActivity : AppCompatActivity() {
                 // 2秒后恢复按钮状态
                 android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
                     binding.btnDownload.text = getString(R.string.download)
-                    // 恢复紫色圆角背景
-                    binding.btnDownload.background = ContextCompat.getDrawable(this, R.drawable.button_download_progress)
-                    binding.btnDownload.setTextColor(ContextCompat.getColor(this, R.color.white))
                 }, 2000)
             }
         }

@@ -6,7 +6,8 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="16dp"
-    android:paddingTop="116dp"
+    android:paddingTop="16dp"
+    android:background="?attr/colorSurface"
     tools:context=".MainActivity">
 
     <!-- 38Tool 标题 -->
@@ -14,38 +15,46 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="38Tool"
-        android:textColor="@android:color/black"
+        android:textColor="@color/text_primary"
         android:textStyle="bold"
-        android:textSize="36sp"
+        android:textSize="48sp"
         android:gravity="center"
-        android:layout_marginTop="50dp"
-        android:layout_marginBottom="24dp" />
+        android:layout_marginTop="100dp"
+        android:layout_marginBottom="24dp"
+        android:fontFamily="sans-serif-black" />
 
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        android:hint="@string/m3u8_url_hint">
+        android:hint="@string/m3u8_url_hint"
+        app:boxBackgroundMode="outline"
+        app:boxCornerRadiusTopStart="12dp"
+        app:boxCornerRadiusTopEnd="12dp"
+        app:boxCornerRadiusBottomStart="12dp"
+        app:boxCornerRadiusBottomEnd="12dp"
+        app:boxStrokeColor="?attr/colorPrimary"
+        app:hintTextColor="?attr/colorPrimary">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/et_m3u8_url"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="textUri" />
+            android:inputType="textUri"
+            android:textColor="?attr/colorOnSurface" />
 
     </com.google.android.material.textfield.TextInputLayout>
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_download"
         android:layout_width="match_parent"
         android:layout_height="58dp"
         android:text="@string/download"
-        android:textColor="@color/white"
         android:textStyle="bold"
-        android:background="@drawable/button_download_progress"
-        android:drawableStart="@drawable/icon_download3"
-        android:drawablePadding="8dp"
-        android:layout_marginBottom="16dp" />
+        android:textColor="?attr/colorOnPrimary"
+        android:layout_marginBottom="16dp"
+        app:cornerRadius="29dp"
+        app:backgroundTint="?attr/colorPrimary" />
 
     <!-- 下载中动画 -->
     <com.airbnb.lottie.LottieAnimationView
@@ -65,7 +74,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:text="@string/usage_description"
-        android:textColor="@android:color/darker_gray"
+        android:textColor="@color/text_secondary"
         android:textSize="12sp"
         android:lineSpacingExtra="2dp"
         android:fontFamily="sans-serif-light" />

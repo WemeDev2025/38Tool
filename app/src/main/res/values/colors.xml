@@ -7,9 +7,15 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <!-- 下载中按钮背景色 -->
+    <!-- 下载中按钮背景色 - 直接使用颜色值 -->
     <color name="download_progress_bg">#FF6200EE</color>
     <color name="download_progress_text">#FFFFFFFF</color>
     <!-- 状态栏颜色 -->
     <color name="status_bar_color">#FFFFFFFF</color>
+    <!-- 主题颜色 -->
+    <color name="text_primary">#FF000000</color>
+    <color name="text_secondary">#FF666666</color>
+    <color name="background_primary">#FFFFFFFF</color>
+    <!-- 错误颜色 -->
+    <color name="error_color">#FFB00020</color>
 </resources>

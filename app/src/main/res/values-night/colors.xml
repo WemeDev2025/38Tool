@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 深色模式颜色 -->
+    <color name="text_primary">#FFFFFFFF</color>
+    <color name="text_secondary">#FFCCCCCC</color>
+    <color name="background_primary">#FF121212</color>
+    <color name="status_bar_color">#FF121212</color>
+    <!-- 深色模式主题颜色 -->
+    <color name="purple_500">#FFBB86FC</color>
+    <color name="purple_700">#FF9C4DCC</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <!-- 错误颜色 -->
+    <color name="error_color">#FFCF6679</color>
+</resources>
