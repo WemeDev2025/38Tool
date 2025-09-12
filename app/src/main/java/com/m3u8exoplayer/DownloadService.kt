@@ -7,8 +7,11 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -73,11 +76,17 @@ class DownloadService : Service() {
     private var downloadJob: Job? = null
     private var isDownloading = false
     
+    // 电池优化相关
+    private var wakeLock: PowerManager.WakeLock? = null
+    private var connectivityManager: ConnectivityManager? = null
+    
     override fun onCreate() {
         super.onCreate()
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         m3u8Downloader = M3U8Downloader(this)
+        connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         createNotificationChannel()
+        setupWakeLock()
     }
     
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -142,6 +151,9 @@ class DownloadService : Service() {
         isDownloading = true
         android.util.Log.d("DownloadService", "设置下载状态为true")
         
+        // 启动保活机制
+        acquireWakeLock()
+        
         // 启动前台服务
         val notification = createNotification(title, "准备下载...", 0)
         startForeground(NOTIFICATION_ID, notification)
@@ -205,6 +217,7 @@ class DownloadService : Service() {
     private fun stopDownload() {
         downloadJob?.cancel()
         isDownloading = false
+        releaseWakeLock()
         stopSelf()
     }
     
@@ -297,5 +310,61 @@ class DownloadService : Service() {
         super.onDestroy()
         downloadJob?.cancel()
         isDownloading = false
+        releaseWakeLock()
+    }
+    
+    /**
+     * 设置WakeLock
+     */
+    private fun setupWakeLock() {
+        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+        wakeLock = powerManager.newWakeLock(
+            PowerManager.PARTIAL_WAKE_LOCK,
+            "M3U8Downloader::DownloadWakeLock"
+        )
+    }
+    
+    /**
+     * 获取WakeLock，防止CPU休眠
+     */
+    private fun acquireWakeLock() {
+        try {
+            if (wakeLock?.isHeld == false) {
+                wakeLock?.acquire(10*60*1000L /*10 minutes*/)
+                android.util.Log.d("DownloadService", "WakeLock已获取")
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("DownloadService", "获取WakeLock失败", e)
+        }
+    }
+    
+    /**
+     * 释放WakeLock
+     */
+    private fun releaseWakeLock() {
+        try {
+            if (wakeLock?.isHeld == true) {
+                wakeLock?.release()
+                android.util.Log.d("DownloadService", "WakeLock已释放")
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("DownloadService", "释放WakeLock失败", e)
+        }
+    }
+    
+    /**
+     * 检查网络连接状态
+     */
+    private fun isNetworkAvailable(): Boolean {
+        return try {
+            val network = connectivityManager?.activeNetwork ?: return false
+            val capabilities = connectivityManager?.getNetworkCapabilities(network) ?: return false
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+        } catch (e: Exception) {
+            android.util.Log.e("DownloadService", "检查网络状态失败", e)
+            false
+        }
     }
 }

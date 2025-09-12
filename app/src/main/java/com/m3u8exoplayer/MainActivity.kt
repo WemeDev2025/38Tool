@@ -2,6 +2,7 @@ package com.m3u8exoplayer
 
 import android.Manifest
 import android.app.AlertDialog
+import android.app.Dialog
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -11,9 +12,11 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.os.PowerManager
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import android.view.LayoutInflater
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
@@ -140,26 +143,21 @@ class MainActivity : AppCompatActivity() {
             // 收起键盘
             hideKeyboard()
             
-            if (checkDownloadPermissions() && checkNotificationPermission()) {
-                val url = binding.etM3u8Url.text.toString().trim()
-                if (url.isNotEmpty()) {
-                    // 启动后台下载服务
-                    val title = "M3U8下载 - ${url.substringAfterLast("/").substringBefore(".")}"
-                    android.util.Log.d("MainActivity", "启动后台下载: $url, 选择码率: ${selectedBitrate?.name}")
-                    DownloadService.startDownloadWithBitrate(this, url, title, selectedBitrate)
-                    
-                    // 设置下载状态（进度将通过广播接收器更新）
-                    binding.btnDownload.isEnabled = false
-                    binding.btnDownload.text = "下载中 0%"
-                    
-                // 隐藏下载动画
-                binding.lottieDownload.visibility = View.GONE
-                binding.lottieDownload.pauseAnimation()
-                    
-                    Toast.makeText(this, "已开始后台下载", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(this, getString(R.string.invalid_url), Toast.LENGTH_SHORT).show()
+            // 检查电池优化设置（如果不在白名单中会显示对话框）
+            checkBatteryOptimization()
+            
+            // 如果已经在白名单中，直接开始下载
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+                if (powerManager.isIgnoringBatteryOptimizations(packageName)) {
+                    // 已经在白名单中，直接开始下载
+                    proceedWithDownload()
                 }
+                // 如果不在白名单中，checkBatteryOptimization()会显示对话框
+                // 用户确认后会调用proceedWithDownload()
+            } else {
+                // Android 6.0以下不需要电池优化检查
+                proceedWithDownload()
             }
         }
     }
@@ -184,17 +182,25 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun showManageStoragePermissionDialog() {
-        AlertDialog.Builder(this)
-            .setTitle("需要所有文件访问权限")
-            .setMessage("为了下载M3U8文件，需要授予所有文件访问权限。\n\n点击确定将跳转到设置页面，请开启\"所有文件访问权限\"。")
-            .setPositiveButton("去设置") { _, _ ->
-                openManageStorageSettings()
-            }
-            .setNegativeButton("取消") { _, _ ->
-                Toast.makeText(this, "需要文件访问权限才能下载文件", Toast.LENGTH_LONG).show()
-            }
-            .setCancelable(false)
-            .show()
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_storage_permission, null)
+        
+        val dialog = Dialog(this)
+        dialog.setContentView(dialogView)
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialog.setCancelable(false)
+        
+        // 设置按钮点击事件
+        dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_confirm).setOnClickListener {
+            dialog.dismiss()
+            openManageStorageSettings()
+        }
+        
+        dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_cancel).setOnClickListener {
+            dialog.dismiss()
+            Toast.makeText(this, "需要文件访问权限才能下载文件", Toast.LENGTH_LONG).show()
+        }
+        
+        dialog.show()
     }
     
     private fun openManageStorageSettings() {
@@ -620,6 +626,434 @@ class MainActivity : AppCompatActivity() {
     private fun hideKeyboard() {
         val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
         imm.hideSoftInputFromWindow(binding.etM3u8Url.windowToken, 0)
+    }
+    
+    /**
+     * 检查电池优化白名单
+     */
+    private fun checkBatteryOptimization() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+            if (!powerManager.isIgnoringBatteryOptimizations(packageName)) {
+                showBatteryOptimizationDialog()
+            }
+        }
+    }
+    
+    /**
+     * 显示电池优化对话框
+     */
+    private fun showBatteryOptimizationDialog() {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_battery_optimization, null)
+        
+        val dialog = Dialog(this)
+        dialog.setContentView(dialogView)
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialog.setCancelable(true)
+        
+        // 设置按钮点击事件
+        dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_confirm).setOnClickListener {
+            dialog.dismiss()
+            openBatteryOptimizationSettings()
+        }
+        
+        dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_cancel).setOnClickListener {
+            dialog.dismiss()
+        }
+        
+        dialog.show()
+    }
+    
+    /**
+     * 打开电池优化设置页面
+     */
+    private fun openBatteryOptimizationSettings() {
+        val manufacturer = Build.MANUFACTURER.lowercase()
+        android.util.Log.d("MainActivity", "设备厂商: $manufacturer")
+        
+        // 根据厂商使用不同的跳转方法
+        when {
+            manufacturer.contains("xiaomi") -> {
+                openXiaomiBatterySettings()
+            }
+            manufacturer.contains("huawei") || manufacturer.contains("honor") -> {
+                openHuaweiBatterySettings()
+            }
+            manufacturer.contains("samsung") -> {
+                openSamsungBatterySettings()
+            }
+            manufacturer.contains("oppo") -> {
+                openOppoBatterySettings()
+            }
+            manufacturer.contains("vivo") -> {
+                openVivoBatterySettings()
+            }
+            manufacturer.contains("oneplus") -> {
+                openOnePlusBatterySettings()
+            }
+            else -> {
+                openGenericBatterySettings()
+            }
+        }
+    }
+    
+    /**
+     * 小米设备电池设置
+     */
+    private fun openXiaomiBatterySettings() {
+        try {
+            // 方法1: 小米电池与性能设置
+            val intent1 = Intent().apply {
+                component = android.content.ComponentName("com.miui.powerkeeper", "com.miui.powerkeeper.ui.HiddenAppsConfigActivity")
+            }
+            if (intent1.resolveActivity(packageManager) != null) {
+                startActivity(intent1)
+                Toast.makeText(this, "请在列表中找到本应用并设置为\"无限制\"", Toast.LENGTH_LONG).show()
+                return
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("MainActivity", "小米方法1失败: ${e.message}")
+        }
+        
+        try {
+            // 方法2: 小米应用管理
+            val intent2 = Intent().apply {
+                component = android.content.ComponentName("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity")
+            }
+            if (intent2.resolveActivity(packageManager) != null) {
+                startActivity(intent2)
+                Toast.makeText(this, "请在列表中找到本应用并允许自启动", Toast.LENGTH_LONG).show()
+                return
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("MainActivity", "小米方法2失败: ${e.message}")
+        }
+        
+        // 回退到通用方法
+        openGenericBatterySettings()
+    }
+    
+    /**
+     * 华为设备电池设置
+     */
+    private fun openHuaweiBatterySettings() {
+        try {
+            // 方法1: 华为电池管理
+            val intent1 = Intent().apply {
+                component = android.content.ComponentName("com.huawei.systemmanager", "com.huawei.systemmanager.optimize.process.ProtectActivity")
+            }
+            if (intent1.resolveActivity(packageManager) != null) {
+                startActivity(intent1)
+                Toast.makeText(this, "请在列表中找到本应用并关闭电池优化", Toast.LENGTH_LONG).show()
+                return
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("MainActivity", "华为方法1失败: ${e.message}")
+        }
+        
+        try {
+            // 方法2: 华为启动管理
+            val intent2 = Intent().apply {
+                component = android.content.ComponentName("com.huawei.systemmanager", "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity")
+            }
+            if (intent2.resolveActivity(packageManager) != null) {
+                startActivity(intent2)
+                Toast.makeText(this, "请在列表中找到本应用并允许后台活动", Toast.LENGTH_LONG).show()
+                return
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("MainActivity", "华为方法2失败: ${e.message}")
+        }
+        
+        // 回退到通用方法
+        openGenericBatterySettings()
+    }
+    
+    /**
+     * 三星设备电池设置 (针对S23 One UI 6.0/6.1优化)
+     */
+    private fun openSamsungBatterySettings() {
+        try {
+            // 方法1: 三星S23 直接请求忽略电池优化 (最新发现)
+            val intent1 = Intent().apply {
+                component = android.content.ComponentName("com.android.settings", "com.android.settings.fuelgauge.RequestIgnoreBatteryOptimizations")
+                data = Uri.parse("package:$packageName")
+            }
+            if (intent1.resolveActivity(packageManager) != null) {
+                startActivity(intent1)
+                Toast.makeText(this, "请在后台控制页面中找到本应用并关闭优化", Toast.LENGTH_LONG).show()
+                return
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("MainActivity", "三星S23方法1失败: ${e.message}")
+        }
+        
+        try {
+            // 方法2: 三星S23 应用详情页面 (最新发现)
+            val intent2 = Intent().apply {
+                component = android.content.ComponentName("com.android.settings", "com.android.settings.applications.InstalledAppDetails")
+                data = Uri.parse("package:$packageName")
+            }
+            if (intent2.resolveActivity(packageManager) != null) {
+                startActivity(intent2)
+                Toast.makeText(this, "请在应用详情中找到\"后台控制\"选项并关闭优化", Toast.LENGTH_LONG).show()
+                return
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("MainActivity", "三星S23方法2失败: ${e.message}")
+        }
+        
+        try {
+            // 方法3: 三星S23 特殊访问权限 (One UI 6.0+)
+            val intent3 = Intent().apply {
+                component = android.content.ComponentName("com.samsung.android.lool", "com.samsung.android.sm.ui.appmanagement.SpecialAccessActivity")
+            }
+            if (intent3.resolveActivity(packageManager) != null) {
+                startActivity(intent3)
+                Toast.makeText(this, "请选择\"优化电池使用\"并找到本应用", Toast.LENGTH_LONG).show()
+                return
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("MainActivity", "三星S23方法3失败: ${e.message}")
+        }
+        
+        try {
+            // 方法4: 三星S23 设置应用 (One UI 6.0+)
+            val intent4 = Intent().apply {
+                component = android.content.ComponentName("com.android.settings", "com.android.settings.Settings\$BatteryOptimizationActivity")
+            }
+            if (intent4.resolveActivity(packageManager) != null) {
+                startActivity(intent4)
+                Toast.makeText(this, "请在电池优化列表中找到本应用并关闭优化", Toast.LENGTH_LONG).show()
+                return
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("MainActivity", "三星S23方法4失败: ${e.message}")
+        }
+        
+        try {
+            // 方法5: 三星S23 One UI 6.0+ 设置
+            val intent5 = Intent().apply {
+                component = android.content.ComponentName("com.samsung.android.settings", "com.samsung.android.settings.battery.BatteryOptimizationActivity")
+            }
+            if (intent5.resolveActivity(packageManager) != null) {
+                startActivity(intent5)
+                Toast.makeText(this, "请在电池优化列表中找到本应用并关闭优化", Toast.LENGTH_LONG).show()
+                return
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("MainActivity", "三星S23方法5失败: ${e.message}")
+        }
+        
+        try {
+            // 方法6: 三星S23 直接跳转到应用详情
+            val intent6 = Intent().apply {
+                component = android.content.ComponentName("com.samsung.android.lool", "com.samsung.android.sm.ui.appmanagement.AppInfoActivity")
+                putExtra("packageName", packageName)
+            }
+            if (intent6.resolveActivity(packageManager) != null) {
+                startActivity(intent6)
+                Toast.makeText(this, "请在应用详情中找到\"电池\"选项并设置为\"未受限制\"", Toast.LENGTH_LONG).show()
+                return
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("MainActivity", "三星S23方法6失败: ${e.message}")
+        }
+        
+        try {
+            // 方法7: 三星S23 通用应用设置
+            val intent7 = Intent().apply {
+                component = android.content.ComponentName("com.samsung.android.lool", "com.samsung.android.sm.ui.appmanagement.AppsActivity")
+            }
+            if (intent7.resolveActivity(packageManager) != null) {
+                startActivity(intent7)
+                Toast.makeText(this, "请找到本应用并进入\"电池\"设置", Toast.LENGTH_LONG).show()
+                return
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("MainActivity", "三星S23方法7失败: ${e.message}")
+        }
+        
+        // 回退到通用方法
+        openGenericBatterySettings()
+    }
+    
+    /**
+     * OPPO设备电池设置
+     */
+    private fun openOppoBatterySettings() {
+        try {
+            // 方法1: OPPO电池管理
+            val intent1 = Intent().apply {
+                component = android.content.ComponentName("com.coloros.oppoguardelf", "com.coloros.powermanager.PowerConsumptionActivity")
+            }
+            if (intent1.resolveActivity(packageManager) != null) {
+                startActivity(intent1)
+                Toast.makeText(this, "请在电池管理中找到本应用并关闭优化", Toast.LENGTH_LONG).show()
+                return
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("MainActivity", "OPPO方法1失败: ${e.message}")
+        }
+        
+        // 回退到通用方法
+        openGenericBatterySettings()
+    }
+    
+    /**
+     * vivo设备电池设置
+     */
+    private fun openVivoBatterySettings() {
+        try {
+            // 方法1: vivo电池管理
+            val intent1 = Intent().apply {
+                component = android.content.ComponentName("com.vivo.abe", "com.vivo.applicationbehaviorengine.ui.ExcessivePowerManagerActivity")
+            }
+            if (intent1.resolveActivity(packageManager) != null) {
+                startActivity(intent1)
+                Toast.makeText(this, "请在电池管理中找到本应用并关闭优化", Toast.LENGTH_LONG).show()
+                return
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("MainActivity", "vivo方法1失败: ${e.message}")
+        }
+        
+        // 回退到通用方法
+        openGenericBatterySettings()
+    }
+    
+    /**
+     * 一加设备电池设置
+     */
+    private fun openOnePlusBatterySettings() {
+        try {
+            // 方法1: 一加电池优化
+            val intent1 = Intent().apply {
+                component = android.content.ComponentName("com.oneplus.security", "com.oneplus.security.chainlaunch.view.ChainLaunchAppListActivity")
+            }
+            if (intent1.resolveActivity(packageManager) != null) {
+                startActivity(intent1)
+                Toast.makeText(this, "请在列表中找到本应用并允许后台活动", Toast.LENGTH_LONG).show()
+                return
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("MainActivity", "一加方法1失败: ${e.message}")
+        }
+        
+        // 回退到通用方法
+        openGenericBatterySettings()
+    }
+    
+    /**
+     * 通用电池设置方法
+     */
+    private fun openGenericBatterySettings() {
+        try {
+            // 方法1: 直接请求忽略电池优化（推荐）
+            val intent1 = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                data = Uri.parse("package:$packageName")
+            }
+            if (intent1.resolveActivity(packageManager) != null) {
+                startActivity(intent1)
+                return
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("MainActivity", "通用方法1失败: ${e.message}")
+        }
+        
+        try {
+            // 方法2: 打开应用详情页面
+            val intent2 = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.parse("package:$packageName")
+            }
+            if (intent2.resolveActivity(packageManager) != null) {
+                startActivity(intent2)
+                Toast.makeText(this, "请在应用详情中找到\"电池优化\"选项并关闭", Toast.LENGTH_LONG).show()
+                return
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("MainActivity", "通用方法2失败: ${e.message}")
+        }
+        
+        try {
+            // 方法3: 打开电池优化设置页面
+            val intent3 = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+            if (intent3.resolveActivity(packageManager) != null) {
+                startActivity(intent3)
+                Toast.makeText(this, "请在列表中找到本应用并关闭电池优化", Toast.LENGTH_LONG).show()
+                return
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("MainActivity", "通用方法3失败: ${e.message}")
+        }
+        
+        try {
+            // 方法4: 打开电池设置页面
+            val intent4 = Intent(Settings.ACTION_BATTERY_SAVER_SETTINGS)
+            if (intent4.resolveActivity(packageManager) != null) {
+                startActivity(intent4)
+                Toast.makeText(this, "请在电池设置中找到应用优化选项", Toast.LENGTH_LONG).show()
+                return
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("MainActivity", "通用方法4失败: ${e.message}")
+        }
+        
+        // 所有方法都失败，显示手动指导
+        showManualBatteryOptimizationGuide()
+    }
+    
+    /**
+     * 显示手动电池优化指导
+     */
+    private fun showManualBatteryOptimizationGuide() {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_manual_battery_guide, null)
+        
+        val dialog = Dialog(this)
+        dialog.setContentView(dialogView)
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialog.setCancelable(false)
+        
+        // 设置按钮点击事件
+        dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_confirm).setOnClickListener {
+            dialog.dismiss()
+            // 用户确认后继续下载流程
+            proceedWithDownload()
+        }
+        
+        dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_cancel).setOnClickListener {
+            dialog.dismiss()
+            // 用户取消，不进行下载
+        }
+        
+        dialog.show()
+    }
+    
+    /**
+     * 继续下载流程
+     */
+    private fun proceedWithDownload() {
+        if (checkDownloadPermissions() && checkNotificationPermission()) {
+            val url = binding.etM3u8Url.text.toString().trim()
+            if (url.isNotEmpty()) {
+                // 启动后台下载服务
+                val title = "M3U8下载 - ${url.substringAfterLast("/").substringBefore(".")}"
+                android.util.Log.d("MainActivity", "启动后台下载: $url, 选择码率: ${selectedBitrate?.name}")
+                DownloadService.startDownloadWithBitrate(this, url, title, selectedBitrate)
+                
+                // 设置下载状态（进度将通过广播接收器更新）
+                binding.btnDownload.isEnabled = false
+                binding.btnDownload.text = "下载中 0%"
+                
+                // 隐藏下载动画
+                binding.lottieDownload.visibility = View.GONE
+                binding.lottieDownload.pauseAnimation()
+                
+                Toast.makeText(this, "已开始后台下载", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, getString(R.string.invalid_url), Toast.LENGTH_SHORT).show()
+            }
+        }
     }
     
 }

@@ -33,6 +33,21 @@ class BitrateAdapter(
             binding.root.text = bitrate.name
             binding.root.isChecked = isSelected
             
+            // 动态设置颜色
+            if (isSelected) {
+                // 选中状态：白色文字，紫色背景
+                binding.root.setTextColor(binding.root.context.getColor(R.color.white))
+                binding.root.setChipBackgroundColorResource(R.color.purple_500)
+                binding.root.setChipStrokeColorResource(R.color.purple_500)
+                binding.root.chipStrokeWidth = 2f
+            } else {
+                // 未选中状态：白色文字，黑色背景
+                binding.root.setTextColor(binding.root.context.getColor(R.color.white))
+                binding.root.setChipBackgroundColorResource(R.color.black)
+                binding.root.setChipStrokeColorResource(R.color.white)
+                binding.root.chipStrokeWidth = 1f
+            }
+            
             // 设置点击事件
             binding.root.setOnClickListener {
                 val previousPosition = selectedPosition
