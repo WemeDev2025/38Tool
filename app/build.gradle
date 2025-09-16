@@ -17,12 +17,29 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    def RELEASE_STORE_FILE_ENV = System.getenv("RELEASE_STORE_FILE")
+    def RELEASE_STORE_PASSWORD_ENV = System.getenv("RELEASE_STORE_PASSWORD")
+    def RELEASE_KEY_ALIAS_ENV = System.getenv("RELEASE_KEY_ALIAS")
+    def RELEASE_KEY_PASSWORD_ENV = System.getenv("RELEASE_KEY_PASSWORD")
+
+    def RELEASE_STORE_FILE_PROP = project.findProperty("RELEASE_STORE_FILE")
+    def RELEASE_STORE_PASSWORD_PROP = project.findProperty("RELEASE_STORE_PASSWORD")
+    def RELEASE_KEY_ALIAS_PROP = project.findProperty("RELEASE_KEY_ALIAS")
+    def RELEASE_KEY_PASSWORD_PROP = project.findProperty("RELEASE_KEY_PASSWORD")
+
+    def HAS_RELEASE_SIGNING = (RELEASE_STORE_FILE_ENV ?: RELEASE_STORE_FILE_PROP) &&
+            (RELEASE_STORE_PASSWORD_ENV ?: RELEASE_STORE_PASSWORD_PROP) &&
+            (RELEASE_KEY_ALIAS_ENV ?: RELEASE_KEY_ALIAS_PROP) &&
+            (RELEASE_KEY_PASSWORD_ENV ?: RELEASE_KEY_PASSWORD_PROP)
+
     signingConfigs {
-        release {
-            storeFile file('debug.keystore')
-            storePassword 'android'
-            keyAlias 'androiddebugkey'
-            keyPassword 'android'
+        if (HAS_RELEASE_SIGNING) {
+            release {
+                storeFile file(RELEASE_STORE_FILE_ENV ?: RELEASE_STORE_FILE_PROP)
+                storePassword (RELEASE_STORE_PASSWORD_ENV ?: RELEASE_STORE_PASSWORD_PROP)
+                keyAlias (RELEASE_KEY_ALIAS_ENV ?: RELEASE_KEY_ALIAS_PROP)
+                keyPassword (RELEASE_KEY_PASSWORD_ENV ?: RELEASE_KEY_PASSWORD_PROP)
+            }
         }
     }
 
@@ -30,7 +47,9 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.release
+            if (HAS_RELEASE_SIGNING) {
+                signingConfig signingConfigs.release
+            }
         }
     }
     compileOptions {
