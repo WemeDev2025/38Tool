@@ -1,4 +1,4 @@
-package com.m3u8exoplayer
+package com.tool38.wemedev
 
 data class BitrateInfo(
     val name: String,           // 如 "720p", "480p"

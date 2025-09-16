@@ -21,7 +21,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="38Tool"
+            android:text="@string/app_title"
             android:textColor="@color/text_primary"
             android:textStyle="bold"
             android:textSize="48sp"
@@ -48,7 +48,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textUri"
-                android:textColor="?attr/colorOnSurface" />
+                android:textColor="?attr/colorOnSurface"
+                android:focusable="true"
+                android:focusableInTouchMode="true" />
 
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -64,7 +66,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="视频质量："
+                android:text="@string/bitrate_quality_label"
                 android:textColor="@color/text_secondary"
                 android:textSize="14sp"
                 android:layout_marginBottom="8dp" />
@@ -87,7 +89,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="正在解析码率..."
+                    android:text="@string/bitrate_loading"
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
 
@@ -114,9 +116,25 @@
             android:text="@string/download"
             android:textStyle="bold"
             android:textColor="?attr/colorOnPrimary"
-            android:layout_marginBottom="16dp"
+            android:layout_marginBottom="8dp"
             app:cornerRadius="29dp"
             app:backgroundTint="?attr/colorPrimary" />
+
+        <!-- 停止按钮 -->
+        <TextView
+            android:id="@+id/tv_stop"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/stop"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp"
+            android:gravity="center"
+            android:layout_marginBottom="16dp"
+            android:padding="8dp"
+            android:visibility="gone"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackground" />
 
         <!-- 下载中动画 -->
         <com.airbnb.lottie.LottieAnimationView
@@ -132,6 +150,7 @@
 
         <!-- 使用说明 -->
         <TextView
+            android:id="@+id/tv_usage_description"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
@@ -143,15 +162,47 @@
 
     </LinearLayout>
 
-    <!-- 版本号 -->
-    <TextView
+    <!-- 底部信息栏 -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="v1.0.0"
-        android:textColor="@color/text_secondary"
-        android:textSize="11sp"
+        android:orientation="horizontal"
         android:gravity="center"
-        android:padding="8dp"
-        android:fontFamily="sans-serif-light" />
+        android:padding="8dp">
+
+        <!-- 版本号 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="v1.0.0"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp"
+            android:fontFamily="sans-serif-light" />
+
+        <!-- 分隔符 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=" | "
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp" />
+
+        <!-- 隐私政策链接 -->
+        <TextView
+            android:id="@+id/tv_privacy_policy"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/privacy_policy"
+            android:textColor="@android:color/black"
+            android:textSize="11sp"
+            android:fontFamily="sans-serif-light"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackground"
+            android:padding="4dp" />
+
+    </LinearLayout>
 
 </LinearLayout>

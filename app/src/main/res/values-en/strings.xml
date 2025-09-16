@@ -1,0 +1,88 @@
+<resources>
+    <string name="app_name">38Tool</string>
+    <string name="m3u8_url_hint">Enter M3U8 URL</string>
+    <string name="download">Download</string>
+    <string name="play">Play</string>
+    <string name="pause">Pause</string>
+    <string name="stop">Stop</string>
+    <string name="progress">Progress: %1$d%%</string>
+    <string name="download_complete">Download complete</string>
+    <string name="download_failed">Download failed</string>
+    <string name="invalid_url">Invalid URL</string>
+    <string name="usage_description">Advantages of M3U8 format:\n• Adaptive bitrate streaming\n• Segmented delivery for smoother playback\n• Wide compatibility across devices and players\n\nFeatures:\n• Automatically download M3U8 and convert to MP4\n• Save to gallery for offline viewing\n• Background downloads supported\n\nFeedback: jing1834@gmail.com</string>
+
+    <!-- Layout labels -->
+    <string name="app_title">38Tool</string>
+    <string name="bitrate_quality_label">Video quality:</string>
+    <string name="bitrate_loading">Resolving bitrates...</string>
+    <string name="privacy_policy">Privacy Policy</string>
+    <string name="version_prefix">v%1$s</string>
+
+    <!-- Welcome dialog -->
+    <string name="welcome_title">Welcome to 38Tool</string>
+    <string name="welcome_message">Thanks for choosing 38Tool!\n\n38Tool downloads M3U8 videos and converts them to MP4 for easy offline viewing.\n\nWe value your privacy. Please read our Privacy Policy for details.</string>
+    <string name="view_privacy_policy">📋 View Privacy Policy</string>
+    <string name="disagree">Disagree</string>
+    <string name="agree_and_continue">Agree and continue</string>
+
+    <!-- Permissions request dialog -->
+    <string name="permissions_required_title">Permissions required</string>
+    <string name="permission_all_files">All files access</string>
+    <string name="permission_all_files_desc">Needed to download and save M3U8 files</string>
+    <string name="permission_notifications">Notifications</string>
+    <string name="permission_notifications_desc">Show download progress and completion</string>
+    <string name="permission_battery_optimization">Battery optimization exemption</string>
+    <string name="permission_battery_optimization_desc">Ensure large downloads aren’t interrupted</string>
+    <string name="permissions_request_tip">Tap Confirm to follow guided steps to finish required permissions.</string>
+    <string name="cancel">Cancel</string>
+    <string name="start_setup">Start setup</string>
+    <string name="go_to_settings">Go to settings</string>
+    <string name="later">Later</string>
+    <string name="start_download">Start download</string>
+    <string name="select_video_quality">Select video quality</string>
+    <string name="recommended">Recommended</string>
+
+    <!-- Notification permission dialog -->
+    <string name="notification_permission_title">Notification permission needed</string>
+    <string name="notification_permission_message">To show download progress and completion, allow notifications.\n\nUsed for:\n• Showing progress\n• Completion reminder\n• Failure alerts\n\nTap Confirm to open settings.</string>
+
+    <!-- Battery optimization dialog -->
+    <string name="battery_optimization_title">Battery optimization</string>
+    <string name="battery_optimization_message">To ensure large downloads aren’t interrupted, add the app to the battery optimization whitelist.\n\nTap Confirm to open App Info, then disable optimization under "Battery" or "Battery optimization".</string>
+
+    <!-- Runtime strings -->
+    <string name="toast_permissions_state_reset">Permission setup state reset</string>
+    <string name="toast_need_file_permission">File access is required to download</string>
+    <string name="toast_open_settings_failed">Unable to open settings. Please enable All Files Access manually.</string>
+    <string name="toast_all_files_permission_granted">All files access granted</string>
+    <string name="toast_all_files_permission_required">All files access is required to download</string>
+    <string name="toast_permissions_required">Permissions are required to download</string>
+    <string name="toast_download_stopped">Download stopped</string>
+    <string name="toast_privacy_open_failed">Unable to open Privacy Policy</string>
+    <string name="toast_system_player_unavailable">System player unavailable. Please open the file manually.</string>
+    <string name="toast_file_not_found">Downloaded file not found</string>
+    <string name="toast_system_player_failed">Failed to start system player: %1$s</string>
+    <string name="toast_saved_to_gallery">Saved to gallery</string>
+    <string name="toast_no_video_player_found">No video player found</string>
+    <string name="toast_task_started">Task started</string>
+
+    <!-- Dynamic button texts -->
+    <string name="downloading_with_speed">Downloading %1$d%% %2$s</string>
+    <string name="downloading_percent">Downloading %1$d%%</string>
+    <string name="converting_percent">Converting MP4 %1$d%%</string>
+
+    <!-- Notification title format -->
+    <string name="download_notification_title_format">M3U8 Download - %1$s</string>
+
+    <!-- Storage permission dialog -->
+    <string name="storage_permission_title">All files access required</string>
+    <string name="storage_permission_message">To download M3U8 files, please allow All Files Access.\n\nTap Confirm to open settings and enable "All files access".</string>
+
+    <!-- Notification channel -->
+    <string name="download_channel_name">M3U8 Download</string>
+    <string name="download_channel_description">Shows M3U8 download progress</string>
+    <string name="download_default_title">M3U8 Download</string>
+    <string name="preparing_download">Preparing download...</string>
+    <string name="download_failed_with_reason">Download failed: %1$s</string>
+</resources>
+

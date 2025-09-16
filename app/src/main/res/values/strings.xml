@@ -23,4 +23,81 @@ M3U8格式优势：
 需求反馈：
 jing1834@gmail.com
     </string>
+    <!-- Added for i18n: layout labels -->
+    <string name="app_title">38Tool</string>
+    <string name="bitrate_quality_label">视频质量：</string>
+    <string name="bitrate_loading">正在解析码率...</string>
+    <string name="privacy_policy">隐私政策</string>
+    <string name="version_prefix">v%1$s</string>
+
+    <!-- Welcome dialog -->
+    <string name="welcome_title">欢迎使用 38Tool</string>
+    <string name="welcome_message">感谢您选择38Tool！\n\n38Tool是一款专业的M3U8视频下载工具，支持将M3U8格式的视频下载并转换为MP4格式，方便您离线观看。\n\n我们非常重视您的隐私保护，请阅读我们的隐私政策了解详细信息。</string>
+    <string name="view_privacy_policy">📋 查看隐私政策</string>
+    <string name="disagree">不同意</string>
+    <string name="agree_and_continue">同意并继续</string>
+
+    <!-- Permissions request dialog -->
+    <string name="permissions_required_title">需要以下权限</string>
+    <string name="permission_all_files">所有文件访问权限</string>
+    <string name="permission_all_files_desc">用于下载和保存M3U8文件</string>
+    <string name="permission_notifications">通知权限</string>
+    <string name="permission_notifications_desc">用于显示下载进度和完成通知</string>
+    <string name="permission_battery_optimization">电池管理优化权限</string>
+    <string name="permission_battery_optimization_desc">确保大文件下载不被系统中断</string>
+    <string name="permissions_request_tip">点击确定将逐步引导您完成权限设置，确保应用正常运行。</string>
+    <string name="cancel">取消</string>
+    <string name="start_setup">开始设置</string>
+    <string name="go_to_settings">去设置</string>
+    <string name="later">稍后</string>
+    <string name="start_download">开始下载</string>
+    <string name="select_video_quality">选择视频质量</string>
+    <string name="recommended">推荐</string>
+
+    <!-- Notification permission dialog -->
+    <string name="notification_permission_title">需要通知权限</string>
+    <string name="notification_permission_message">为了显示下载进度和完成通知，需要授予通知权限。\n\n通知权限将用于：\n• 显示下载进度\n• 下载完成提醒\n• 下载失败通知\n\n点击确定将跳转到权限设置页面。</string>
+
+    <!-- Battery optimization dialog -->
+    <string name="battery_optimization_title">电池优化设置</string>
+    <string name="battery_optimization_message">为了确保大文件下载不被系统中断，建议将应用添加到电池优化白名单中。\n\n点击确定将跳转到应用信息页面，请在"电池"或"电池优化"选项中关闭优化。</string>
+
+    <!-- Runtime strings for MainActivity -->
+    <string name="toast_permissions_state_reset">权限设置状态已重置</string>
+    <string name="toast_need_file_permission">需要文件访问权限才能下载文件</string>
+    <string name="toast_open_settings_failed">无法打开设置页面，请手动在设置中开启所有文件访问权限</string>
+    <string name="toast_all_files_permission_granted">所有文件访问权限已授予</string>
+    <string name="toast_all_files_permission_required">需要授予所有文件访问权限才能下载文件</string>
+    <string name="toast_permissions_required">需要权限才能下载文件</string>
+    <string name="toast_download_stopped">下载已停止</string>
+    <string name="toast_privacy_open_failed">无法打开隐私政策页面</string>
+    <string name="toast_system_player_unavailable">系统播放器不可用，请手动打开下载的文件</string>
+    <string name="toast_file_not_found">未找到下载的文件</string>
+    <string name="toast_system_player_failed">系统播放器启动失败: %1$s</string>
+    <string name="toast_saved_to_gallery">已保存至相册</string>
+    <string name="toast_no_video_player_found">没有找到可用的视频播放器</string>
+    <string name="toast_task_started">任务成功启动</string>
+
+    <!-- Dynamic button texts -->
+    <string name="downloading_with_speed">下载中 %1$d%% %2$s</string>
+    <string name="downloading_percent">下载中 %1$d%%</string>
+    <string name="converting_percent">转换MP4 %1$d%%</string>
+
+    <!-- Notification title format -->
+    <string name="download_notification_title_format">M3U8下载 - %1$s</string>
+
+    <!-- Storage permission dialog -->
+    <string name="storage_permission_title">需要所有文件访问权限</string>
+    <string name="storage_permission_message">为了下载M3U8文件，需要授予所有文件访问权限。\n\n点击确定将跳转到设置页面，请开启"所有文件访问权限"。</string>
+
+    <!-- Notification channel -->
+    <string name="download_channel_name">M3U8下载</string>
+    <string name="download_channel_description">显示M3U8下载进度</string>
+    <string name="download_default_title">M3U8下载</string>
+    <string name="preparing_download">准备下载...</string>
+    <string name="download_failed_with_reason">下载失败: %1$s</string>
+
+    <!-- Misc toasts -->
+    <string name="toast_find_battery_settings">请在应用详情中找到"电池"或"电池优化"选项并关闭优化</string>
+    <string name="toast_cannot_open_app_settings">无法打开应用设置页面</string>
 </resources>

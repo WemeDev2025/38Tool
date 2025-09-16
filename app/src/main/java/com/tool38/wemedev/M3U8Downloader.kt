@@ -1,4 +1,4 @@
-package com.m3u8exoplayer
+package com.tool38.wemedev
 
 import android.content.ContentValues
 import android.content.Context
@@ -36,7 +36,7 @@ class M3U8Downloader(private val context: Context) {
     
     suspend fun downloadM3U8(
         url: String,
-        onProgress: (Int) -> Unit,
+        onProgress: (Int, String, String) -> Unit,
         onComplete: (String) -> Unit,
         onError: (String) -> Unit
     ) = withContext(Dispatchers.IO) {
@@ -46,7 +46,7 @@ class M3U8Downloader(private val context: Context) {
     suspend fun downloadM3U8WithBitrate(
         url: String,
         selectedBitrate: BitrateInfo?,
-        onProgress: (Int) -> Unit,
+        onProgress: (Int, String, String) -> Unit,
         onComplete: (String) -> Unit,
         onError: (String) -> Unit
     ) = withContext(Dispatchers.IO) {
@@ -80,6 +80,13 @@ class M3U8Downloader(private val context: Context) {
             val downloadedCount = AtomicInteger(0)
             val totalSegments = playlist.size
             
+            // 下载速度计算相关变量
+            val startTime = System.currentTimeMillis()
+            val downloadedBytes = AtomicInteger(0)
+            var lastSpeedUpdateTime = startTime
+            var lastDownloadedBytes = 0
+            var lastProgressUpdateTime = startTime
+            
             // 创建临时文件存储每个片段
             val tempFiles = mutableListOf<File>()
             
@@ -95,11 +102,29 @@ class M3U8Downloader(private val context: Context) {
                         tempFile.writeBytes(segmentData)
                         tempFiles.add(tempFile)
                         
+                        // 更新下载字节数
+                        val bytesDownloaded = segmentData.size
+                        downloadedBytes.addAndGet(bytesDownloaded)
+                        
                         val currentCount = downloadedCount.incrementAndGet()
                         val progress = (currentCount * 100) / totalSegments
-                        onProgress(progress)
                         
-                        Log.d("M3U8Downloader", "片段 $index 下载完成，进度: $progress%")
+                        // 计算下载速度
+                        val currentTime = System.currentTimeMillis()
+                        val speedText = if (currentTime - lastSpeedUpdateTime > 1000) { // 每秒更新一次速度
+                            val timeDiff = (currentTime - lastSpeedUpdateTime) / 1000.0
+                            val bytesDiff = downloadedBytes.get() - lastDownloadedBytes
+                            val speedBps = bytesDiff / timeDiff
+                            lastSpeedUpdateTime = currentTime
+                            lastDownloadedBytes = downloadedBytes.get()
+                            formatSpeed(speedBps)
+                        } else {
+                            ""
+                        }
+                        
+                        onProgress(progress, "下载中", speedText)
+                        
+                        Log.d("M3U8Downloader", "片段 $index 下载完成，进度: $progress%, 速度: $speedText")
                         
                     } catch (e: Exception) {
                         Log.e("M3U8Downloader", "下载片段 $index 失败", e)
@@ -130,7 +155,9 @@ class M3U8Downloader(private val context: Context) {
             Log.d("M3U8Downloader", "TS文件下载完成: ${outputFile.absolutePath}")
             
             // 转换为MP4格式
-            val mp4File = convertToMp4(outputFile, onProgress)
+            val mp4File = convertToMp4(outputFile) { progress, stage, speed ->
+                onProgress(progress, "转换中...", "")
+            }
             if (mp4File != null) {
                 // 导出到相册
                 val savedUri = saveToGallery(mp4File)
@@ -352,7 +379,7 @@ class M3U8Downloader(private val context: Context) {
         }
     }
     
-    private suspend fun convertToMp4(tsFile: File, onProgress: (Int) -> Unit): File? = withContext(Dispatchers.IO) {
+    private suspend fun convertToMp4(tsFile: File, onProgress: (Int, String, String) -> Unit): File? = withContext(Dispatchers.IO) {
         try {
             val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
             val mp4File = File(tsFile.parent, "downloaded_video_$timestamp.mp4")
@@ -364,7 +391,7 @@ class M3U8Downloader(private val context: Context) {
             
             if (success) {
                 Log.d("M3U8Downloader", "MP4重命名成功: ${mp4File.absolutePath}")
-                onProgress(100)
+                onProgress(100, "转换完成", "")
                 mp4File
             } else {
                 Log.e("M3U8Downloader", "MP4重命名失败")
@@ -408,6 +435,25 @@ class M3U8Downloader(private val context: Context) {
         } catch (e: Exception) {
             Log.e("M3U8Downloader", "保存到相册失败", e)
             null
+        }
+    }
+    
+    /**
+     * 格式化下载速度显示
+     */
+    private fun formatSpeed(bytesPerSecond: Double): String {
+        return when {
+            bytesPerSecond >= 1024 * 1024 -> {
+                val mbps = bytesPerSecond / (1024 * 1024)
+                "%.1fM/S".format(mbps)
+            }
+            bytesPerSecond >= 1024 -> {
+                val kbps = bytesPerSecond / 1024
+                "%.1fK/S".format(kbps)
+            }
+            else -> {
+                "%.0fB/S".format(bytesPerSecond)
+            }
         }
     }
 }

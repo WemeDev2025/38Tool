@@ -12,7 +12,7 @@
         android:id="@+id/tv_dialog_title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="手动设置电池优化"
+        android:text="@string/notification_permission_title"
         android:textSize="22sp"
         android:textStyle="bold"
         android:textColor="?attr/colorOnSurface"
@@ -24,7 +24,7 @@
         android:id="@+id/tv_dialog_message"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="请根据您的手机品牌手动设置：\n\n📱 小米/红米：\n设置 → 电池与性能 → 应用电量管理 → 找到本应用 → 无限制\n\n📱 华为/荣耀：\n设置 → 电池 → 启动管理 → 关闭本应用自动管理 → 允许后台活动\n\n📱 三星S23 (One UI 6.0+)：\n设置 → 应用程序 → 找到本应用 → 后台控制 → 关闭优化\n\n📱 三星其他机型：\n设置 → 应用程序 → 本应用 → 电池 → 允许后台活动\n\n📱 OPPO/一加：\n设置 → 电池 → 应用耗电管理 → 找到本应用 → 不限制\n\n📱 vivo：\n设置 → 电池 → 后台耗电管理 → 找到本应用 → 允许后台高耗电\n\n设置完成后，大文件下载将不会被系统中断。"
+        android:text="@string/notification_permission_message"
         android:textSize="16sp"
         android:textColor="?attr/colorOnSurfaceVariant"
         android:lineSpacingExtra="4dp"
@@ -43,17 +43,17 @@
             style="@style/Widget.Material3.Button.TextButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="取消"
+            android:text="@string/cancel"
             android:textColor="?attr/colorPrimary"
             android:layout_marginEnd="8dp" />
 
-        <!-- 我知道了按钮 -->
+        <!-- 去设置按钮 -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_confirm"
             style="@style/Widget.Material3.Button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="我知道了"
+            android:text="@string/go_to_settings"
             app:backgroundTint="?attr/colorPrimary"
             android:textColor="?attr/colorOnPrimary" />
 

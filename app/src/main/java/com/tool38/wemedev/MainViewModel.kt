@@ -1,4 +1,4 @@
-package com.m3u8exoplayer
+package com.tool38.wemedev
 
 import android.app.Application
 import android.content.Context
@@ -193,9 +193,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 withContext(Dispatchers.IO) {
                     m3u8Downloader.downloadM3U8(
                         url = url,
-                        onProgress = { progress ->
+                        onProgress = { progress, stage, speed ->
                             _progress.postValue(progress)
-                            saveProgress(progress, "下载中... $progress%", true, url)
+                            val statusText = if (speed.isNotEmpty()) {
+                                "下载中 $progress% $speed"
+                            } else {
+                                "下载中... $progress%"
+                            }
+                            saveProgress(progress, statusText, true, url)
                         },
                         onComplete = { filePath ->
                             _status.postValue("下载完成: $filePath")

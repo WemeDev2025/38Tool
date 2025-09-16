@@ -11,7 +11,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="选择视频质量"
+        android:text="@string/select_video_quality"
         android:textColor="@color/text_primary"
         android:textSize="18sp"
         android:textStyle="bold"
@@ -37,7 +37,7 @@
             android:id="@+id/btn_cancel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="取消"
+            android:text="@string/cancel"
             android:layout_marginEnd="8dp"
             style="@style/Widget.Material3.Button.TextButton" />
 
@@ -45,7 +45,7 @@
             android:id="@+id/btn_download"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="开始下载"
+            android:text="@string/start_download"
             app:backgroundTint="?attr/colorPrimary" />
 
     </LinearLayout>

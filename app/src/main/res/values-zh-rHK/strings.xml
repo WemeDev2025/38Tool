@@ -1,0 +1,88 @@
+<resources>
+    <string name="app_name">38Tool</string>
+    <string name="m3u8_url_hint">輸入 M3U8 URL</string>
+    <string name="download">下載</string>
+    <string name="play">播放</string>
+    <string name="pause">暫停</string>
+    <string name="stop">停止</string>
+    <string name="progress">進度：%1$d%%</string>
+    <string name="download_complete">下載完成</string>
+    <string name="download_failed">下載失敗</string>
+    <string name="invalid_url">無效的 URL</string>
+    <string name="usage_description">M3U8 格式優勢：\n• 支援自適應碼率，按網絡狀況自動調整畫質\n• 分段傳輸，降低伺服器負載、提升播放流暢度\n• 相容性佳，廣泛支援各播放器與裝置\n\n功能說明：\n• 自動下載 M3U8 並轉換為 MP4\n• 儲存至相簿，方便離線觀看\n• 支援背景下載，不影響其他應用使用\n\n意見回饋：jing1834@gmail.com</string>
+
+    <!-- Layout labels -->
+    <string name="app_title">38Tool</string>
+    <string name="bitrate_quality_label">影片質素：</string>
+    <string name="bitrate_loading">正在解析碼率...</string>
+    <string name="privacy_policy">私隱政策</string>
+    <string name="version_prefix">v%1$s</string>
+
+    <!-- Welcome dialog -->
+    <string name="welcome_title">歡迎使用 38Tool</string>
+    <string name="welcome_message">多謝你選擇 38Tool！\n\n38Tool 係一款專業 M3U8 影片下載工具，支援下載並轉換為 MP4，方便離線觀看。\n\n我哋非常重視你嘅私隱，請閱讀私隱政策了解詳情。</string>
+    <string name="view_privacy_policy">📋 查看私隱政策</string>
+    <string name="disagree">不同意</string>
+    <string name="agree_and_continue">同意並繼續</string>
+
+    <!-- Permissions request dialog -->
+    <string name="permissions_required_title">需要以下權限</string>
+    <string name="permission_all_files">所有檔案存取權</string>
+    <string name="permission_all_files_desc">用於下載同儲存 M3U8 檔案</string>
+    <string name="permission_notifications">通知權限</string>
+    <string name="permission_notifications_desc">用於顯示下載進度同完成通知</string>
+    <string name="permission_battery_optimization">電池優化例外</string>
+    <string name="permission_battery_optimization_desc">確保大型下載唔會被系統中斷</string>
+    <string name="permissions_request_tip">撳「確認」會一步一步帶你完成所需權限設定，確保應用正常運作。</string>
+    <string name="cancel">取消</string>
+    <string name="start_setup">開始設定</string>
+    <string name="go_to_settings">去設定</string>
+    <string name="later">之後</string>
+    <string name="start_download">開始下載</string>
+    <string name="select_video_quality">選擇影片質素</string>
+    <string name="recommended">推薦</string>
+
+    <!-- Notification permission dialog -->
+    <string name="notification_permission_title">需要通知權限</string>
+    <string name="notification_permission_message">為咗顯示下載進度同完成通知，需要授予通知權限。\n\n通知權限會用於：\n• 顯示下載進度\n• 下載完成提示\n• 下載失敗通知\n\n撳確認會打開權限設定頁面。</string>
+
+    <!-- Battery optimization dialog -->
+    <string name="battery_optimization_title">電池優化設定</string>
+    <string name="battery_optimization_message">為確保大型下載唔會被系統中斷，建議將應用加入電池優化白名單。\n\n撳確認會打開應用資訊頁，請喺「電池」或「電池優化」入面關閉優化。</string>
+
+    <!-- Runtime strings -->
+    <string name="toast_permissions_state_reset">已重設權限設定狀態</string>
+    <string name="toast_need_file_permission">需要檔案存取權先可以下載</string>
+    <string name="toast_open_settings_failed">開唔到設定，請手動啟用所有檔案存取</string>
+    <string name="toast_all_files_permission_granted">已授予所有檔案存取權</string>
+    <string name="toast_all_files_permission_required">需要授予所有檔案存取權先可以下載</string>
+    <string name="toast_permissions_required">需要權限先可以下載</string>
+    <string name="toast_download_stopped">已停止下載</string>
+    <string name="toast_privacy_open_failed">開唔到私隱政策頁面</string>
+    <string name="toast_system_player_unavailable">系統播放器唔可用，請手動開啟檔案</string>
+    <string name="toast_file_not_found">搵唔到下載嘅檔案</string>
+    <string name="toast_system_player_failed">系統播放器啟動失敗：%1$s</string>
+    <string name="toast_saved_to_gallery">已儲存到相簿</string>
+    <string name="toast_no_video_player_found">搵唔到可用嘅影片播放器</string>
+    <string name="toast_task_started">任務已開始</string>
+
+    <!-- Dynamic button texts -->
+    <string name="downloading_with_speed">下載中 %1$d%% %2$s</string>
+    <string name="downloading_percent">下載中 %1$d%%</string>
+    <string name="converting_percent">轉換 MP4 %1$d%%</string>
+
+    <!-- Notification title format -->
+    <string name="download_notification_title_format">M3U8 下載 - %1$s</string>
+
+    <!-- Storage permission dialog -->
+    <string name="storage_permission_title">需要所有檔案存取權</string>
+    <string name="storage_permission_message">為咗下載 M3U8 檔案，請授予所有檔案存取權。\n\n撳「確認」會打開設定，請啟用「所有檔案存取權」。</string>
+
+    <!-- Notification channel -->
+    <string name="download_channel_name">M3U8 下載</string>
+    <string name="download_channel_description">顯示 M3U8 下載進度</string>
+    <string name="download_default_title">M3U8 下載</string>
+    <string name="preparing_download">準備下載...</string>
+    <string name="download_failed_with_reason">下載失敗：%1$s</string>
+</resources>
+

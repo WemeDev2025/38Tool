@@ -1,4 +1,4 @@
-package com.m3u8exoplayer
+package com.tool38.wemedev
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -29,11 +29,12 @@ class DownloadService : Service() {
         const val EXTRA_TITLE = "title"
         
         // 广播相关常量
-        const val ACTION_PROGRESS_UPDATE = "com.m3u8exoplayer.PROGRESS_UPDATE"
+        const val ACTION_PROGRESS_UPDATE = "com.tool38.wemedev.PROGRESS_UPDATE"
         const val EXTRA_PROGRESS = "progress"
         const val EXTRA_STATUS = "status"
         const val EXTRA_STAGE = "stage"
         const val EXTRA_FILE_PATH = "file_path"
+        const val EXTRA_SPEED = "speed"
         const val STAGE_DOWNLOAD = "download"
         const val STAGE_CONVERT = "convert"
         const val STAGE_COMPLETE = "complete"
@@ -94,7 +95,7 @@ class DownloadService : Service() {
         when (intent?.action) {
             ACTION_START_DOWNLOAD -> {
                 val url = intent.getStringExtra(EXTRA_URL) ?: return START_NOT_STICKY
-                val title = intent.getStringExtra(EXTRA_TITLE) ?: "M3U8下载"
+                val title = intent.getStringExtra(EXTRA_TITLE) ?: getString(R.string.download_default_title)
                 val bitrateName = intent.getStringExtra("selected_bitrate")
                 val bitrateUrl = intent.getStringExtra("bitrate_url")
                 
@@ -122,10 +123,10 @@ class DownloadService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "M3U8下载",
+                getString(R.string.download_channel_name),
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "显示M3U8下载进度"
+                description = getString(R.string.download_channel_description)
                 setShowBadge(false)
                 enableLights(false)
                 enableVibration(false)
@@ -155,7 +156,7 @@ class DownloadService : Service() {
         acquireWakeLock()
         
         // 启动前台服务
-        val notification = createNotification(title, "准备下载...", 0)
+        val notification = createNotification(title, getString(R.string.preparing_download), 0)
         startForeground(NOTIFICATION_ID, notification)
         android.util.Log.d("DownloadService", "前台服务已启动")
         
@@ -165,17 +166,22 @@ class DownloadService : Service() {
             m3u8Downloader.downloadM3U8WithBitrate(
                 url = url,
                 selectedBitrate = bitrate,
-                onProgress = { progress ->
+                onProgress = { progress, stage, speed ->
                     // 下载阶段：0-100%
-                    updateNotification(title, "下载中... $progress%", progress)
-                    sendProgressBroadcast(STAGE_DOWNLOAD, progress, "下载中... $progress%")
+                    val statusText = if (speed.isNotEmpty()) {
+                        getString(R.string.downloading_with_speed, progress, speed)
+                    } else {
+                        getString(R.string.downloading_percent, progress)
+                    }
+                    updateNotification(title, statusText, progress)
+                    sendProgressBroadcast(STAGE_DOWNLOAD, progress, statusText, null, speed)
                 },
                 onComplete = { message ->
                     // 下载完成，开始转换阶段
                     startConvertPhase(title)
                 },
                 onError = { error ->
-                    updateNotification(title, "下载失败: $error", 0)
+                    updateNotification(title, getString(R.string.download_failed_with_reason, error), 0)
                     // 5秒后停止服务
                     CoroutineScope(Dispatchers.Main).launch {
                         kotlinx.coroutines.delay(5000)
@@ -192,16 +198,17 @@ class DownloadService : Service() {
         val convertJob = CoroutineScope(Dispatchers.IO).launch {
             while (convertProgress < 100) {
                 convertProgress += 2
-                updateNotification(title, "转换MP4... $convertProgress%", convertProgress)
-                sendProgressBroadcast(STAGE_CONVERT, convertProgress, "转换MP4... $convertProgress%")
+                val converting = getString(R.string.converting_percent, convertProgress)
+                updateNotification(title, converting, convertProgress)
+                sendProgressBroadcast(STAGE_CONVERT, convertProgress, converting)
                 kotlinx.coroutines.delay(300) // 转换比下载稍快一些
             }
             
             // 转换完成
-            updateNotification(title, "下载完成", 100)
+            updateNotification(title, getString(R.string.download_complete), 100)
             // 查找实际下载的文件路径
             val actualFilePath = findActualDownloadedFile()
-            sendProgressBroadcast(STAGE_COMPLETE, 100, "下载完成", actualFilePath)
+            sendProgressBroadcast(STAGE_COMPLETE, 100, getString(R.string.download_complete), actualFilePath)
             
             // 3秒后停止服务
             CoroutineScope(Dispatchers.Main).launch {
@@ -255,17 +262,18 @@ class DownloadService : Service() {
         android.util.Log.d("DownloadService", "通知已发送到通知管理器")
     }
     
-    private fun sendProgressBroadcast(stage: String, progress: Int, status: String, filePath: String? = null) {
+    private fun sendProgressBroadcast(stage: String, progress: Int, status: String, filePath: String? = null, speed: String? = null) {
         val intent = Intent(ACTION_PROGRESS_UPDATE).apply {
             putExtra(EXTRA_STAGE, stage)
             putExtra(EXTRA_PROGRESS, progress)
             putExtra(EXTRA_STATUS, status)
             filePath?.let { putExtra(EXTRA_FILE_PATH, it) }
+            speed?.let { putExtra(EXTRA_SPEED, it) }
             // 设置包名确保广播发送到正确的应用
             setPackage(packageName)
         }
         sendBroadcast(intent)
-        android.util.Log.d("DownloadService", "发送进度广播: $stage - $progress% - $status${filePath?.let { " - 文件: $it" } ?: ""}")
+        android.util.Log.d("DownloadService", "发送进度广播: $stage - $progress% - $status${filePath?.let { " - 文件: $it" } ?: ""}${speed?.let { " - 速度: $it" } ?: ""}")
     }
     
     /**

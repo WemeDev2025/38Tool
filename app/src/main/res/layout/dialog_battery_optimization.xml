@@ -12,7 +12,7 @@
         android:id="@+id/tv_dialog_title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="电池优化设置"
+        android:text="@string/battery_optimization_title"
         android:textSize="22sp"
         android:textStyle="bold"
         android:textColor="?attr/colorOnSurface"
@@ -24,7 +24,7 @@
         android:id="@+id/tv_dialog_message"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="为了确保大文件下载不被系统中断，建议将应用添加到电池优化白名单中。\n\n点击确定将跳转到设置页面。"
+        android:text="@string/battery_optimization_message"
         android:textSize="16sp"
         android:textColor="?attr/colorOnSurfaceVariant"
         android:lineSpacingExtra="4dp"
@@ -43,7 +43,7 @@
             style="@style/Widget.Material3.Button.TextButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="稍后"
+            android:text="@string/later"
             android:textColor="?attr/colorPrimary"
             android:layout_marginEnd="8dp" />
 
@@ -53,7 +53,7 @@
             style="@style/Widget.Material3.Button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="去设置"
+            android:text="@string/go_to_settings"
             app:backgroundTint="?attr/colorPrimary"
             android:textColor="?attr/colorOnPrimary" />
 

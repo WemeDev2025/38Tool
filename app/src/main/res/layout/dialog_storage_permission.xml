@@ -12,7 +12,7 @@
         android:id="@+id/tv_dialog_title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="需要所有文件访问权限"
+        android:text="@string/storage_permission_title"
         android:textSize="22sp"
         android:textStyle="bold"
         android:textColor="?attr/colorOnSurface"
@@ -24,7 +24,7 @@
         android:id="@+id/tv_dialog_message"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="为了下载M3U8文件，需要授予所有文件访问权限。\n\n点击确定将跳转到设置页面，请开启&quot;所有文件访问权限&quot;。"
+        android:text="@string/storage_permission_message"
         android:textSize="16sp"
         android:textColor="?attr/colorOnSurfaceVariant"
         android:lineSpacingExtra="4dp"
@@ -43,7 +43,7 @@
             style="@style/Widget.Material3.Button.TextButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="取消"
+            android:text="@string/cancel"
             android:textColor="?attr/colorPrimary"
             android:layout_marginEnd="8dp" />
 
@@ -53,7 +53,7 @@
             style="@style/Widget.Material3.Button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="去设置"
+            android:text="@string/go_to_settings"
             app:backgroundTint="?attr/colorPrimary"
             android:textColor="?attr/colorOnPrimary" />
 

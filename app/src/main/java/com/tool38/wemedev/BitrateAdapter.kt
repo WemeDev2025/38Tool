@@ -1,9 +1,9 @@
-package com.m3u8exoplayer
+package com.tool38.wemedev
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.m3u8exoplayer.databinding.ItemBitrateChipBinding
+import com.tool38.wemedev.databinding.ItemBitrateChipBinding
 
 class BitrateAdapter(
     private val bitrates: List<BitrateInfo>,
